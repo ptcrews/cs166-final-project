@@ -1,8 +1,10 @@
 #include <iostream>
+#include "ResUtils.h"
 
 using namespace std;
 
 int main() {
-  cout << "In RunTests" << endl;
+  ResUtils utils(10);
+  utils.testUnbalancedMerge();
   return 0;
 }
