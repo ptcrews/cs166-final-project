@@ -185,7 +185,7 @@ void ResilientPQ::push(size_t index) {
   } else {
     // if i is last layer, make a new layer
     size_t newLayerIndex = this->layers.size();
-    Layer newLayer(this->delta, this->n, this->layers[newLayerIndex - 1], newLayerIndex);
+    Layer newLayer(this->delta, this->n, &this->layers[newLayerIndex - 1], newLayerIndex);
     this->layers.push_back(newLayer);
 
     this->layers[index+1].downBuffer.clear();
