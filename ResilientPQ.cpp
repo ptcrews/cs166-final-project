@@ -27,32 +27,35 @@ void ResilientPQ::insert(int key) {
 
   //Check if a merge is required; Not required if layers haven't been initialized
   if (this->layers.size() == 0) {
-    Layer layer(delta, n, NULL, -1);
+    Layer layer(delta, n, NULL, 0);
     for (size_t i = 0; i < this->buffer.size(); i++) {
-      layer.upBuffer.push_back(this->buffer[i]);
+      layer.downBuffer.push_back(this->buffer[i]);
     }
-    this->buffer.clear(); // delete all elements from the insertion buffer
+    this->layers.push_back(layer);
 
-    // Now we need to call push primitive if required
-    // This will push elements to the lower buffer till all the size invariants are satisfied
-    //TODO: Call push primitive
-
+  } else if (this->layers.size() == 1 && this->layers[0].downBuffer.size() < this->layers[0].getThreshold()/2) {
+    // if there is only 1 layer  (L_0) and its down buffer is not filled enough, we simply merge into D_0
+    vector<int> merged = merge(this->buffer, this->layers[0].downBuffer);
+    this->layers[0].downBuffer.clear();
+    this->layers[0].downBuffer = merged;
   } else {
     // There are elements in the up buffer;
     // TODO: Call resilient merge
     vector<int> merged = merge(this->buffer, this->layers[0].upBuffer);
 
-    // As we have merged both the vectors, reset the insertion buffer
-    this->buffer.clear();
-
     // Add all elements into the upBuffer (U_0)
     for (size_t i = 0; i < merged.size(); i++) {
       this->layers[0].upBuffer.push_back(merged[i]);
     }
+
     // Now we need to call push primitive if required
     // This will push elements to the lower buffer till all the size invariants are satisfied
-    //TODO: Call push primitive
+    if (this->layers[0].upBuffer.size() > this->layers[0].getThreshold()/2) {
+      push(0);
+    }
   }
+
+  this->buffer.clear(); // delete all elements from the insertion buffer
 }
 
 int ResilientPQ::deletemin() {
@@ -150,8 +153,8 @@ pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
 }
 
 // PUSH primitive, accepts index of the layer on which the push function needs to be called
-// Note that PUSH primitive is called on a down buffer U_i
-// The buffers involved are U_1, D_i, and U_{i+1}
+// Note that PUSH primitive is called on an up buffer U_i
+// The buffers involved are U_1, D_i, and U_{i+1} (or D_{i+1} if i is the last layer)
 void ResilientPQ::push(size_t index) {
   bool isLast = (index == this->layers.size() - 1)
   // Merge U_i and D_i
@@ -193,10 +196,10 @@ void ResilientPQ::push(size_t index) {
   }
 
   // if new buffers violate size invariants, invoke primitives accordingly
-  if (this->layers[index+1].upBuffer.size() > this->layers[i+1].getThreshold()/2) {
+  if (this->layers[index+1].upBuffer.size() > this->layers[index+1].getThreshold()/2) {
     push(index+1);
   }
-  if (this->layers[index].downBuffer.size() < this->layers[i].getThreshold()/2) {
+  if (this->layers[index].downBuffer.size() < this->layers[index].getThreshold()/2) {
     pull(index);
   }
 }
