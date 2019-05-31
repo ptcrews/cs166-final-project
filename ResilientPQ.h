@@ -10,7 +10,7 @@ using namespace std;
 class ResilientPQ {
 
 public:
-  ResilientPQ();
+  ResilientPQ(size_t delta, size_t n);
   ~ResilientPQ();
   
   void insert(int key);
@@ -18,8 +18,14 @@ public:
 
 private:
   vector<int> buffer;
-  size_t buffer_threshold;
-
+  size_t bufferThreshold;
+  
+  // Total number of corruptions in the memory
+  size_t delta;
+  // Total number of elements to be inserted in the priority queue
+  size_t n;
+  
+  // Layer of the priority queue
   vector<Layer> layers;
 
     /* Fun with C++: these next two lines disable implicitly-generated copy

@@ -1,7 +1,10 @@
 #include "ResilientPQ.h"
+#include <math.h>
 
-ResilientPQ::ResilientPQ() {
-
+ResilientPQ::ResilientPQ(size_t delta, size_t n) {
+  this->delta = delta;
+  this->n = n;
+  this->bufferThreshold = delta + log2(n); 
 }
 
 ResilientPQ::~ResilientPQ() {
