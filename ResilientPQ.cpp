@@ -6,7 +6,7 @@
 ResilientPQ::ResilientPQ(size_t delta, size_t n) {
   this->delta = delta;
   this->n = n;
-  this->bufferThreshold = delta + log2(n) + 1; // The insertion buffer can contain upto \delta + log n + 1 elements 
+  this->bufferThreshold = delta + log2(n) + 1; // The insertion buffer can contain upto \delta + log n + 1 elements
 }
 
 ResilientPQ::~ResilientPQ() {
@@ -19,12 +19,12 @@ void ResilientPQ::insert(int key) {
     this->buffer.push_back(key);
     return;
   }
-  // Insertion buffer is full; first sort elements in the buffer and 
+  // Insertion buffer is full; first sort elements in the buffer and
   //then perform a faithful merge with the up_buffer
-  
+
   //TODO: implement resilient sorting
   sort(this->buffer.begin(), this->buffer.end());
-  
+
   //Check if a merge is required; Not required if layers haven't been initialized
   if (this->layers.size() == 0) {
     Layer layer(delta, n, NULL, -1);
@@ -33,7 +33,7 @@ void ResilientPQ::insert(int key) {
     }
     this->buffer.clear(); // delete all elements from the insertion buffer
 
-    // Now we need to call push primitive if required 
+    // Now we need to call push primitive if required
     // This will push elements to the lower buffer till all the size invariants are satisfied
     //TODO: Call push primitive
 
@@ -41,17 +41,17 @@ void ResilientPQ::insert(int key) {
     // There are elements in the up buffer;
     // TODO: Call resilient merge
     vector<int> merged = merge(this->buffer, this->layers[0].upBuffer);
-    
+
     // As we have merged both the vectors, reset the insertion buffer
     this->buffer.clear();
-    
+
     // Add all elements into the upBuffer (U_0)
     for (size_t i = 0; i < merged.size(); i++) {
       this->layers[0].upBuffer.push_back(merged[i]);
     }
-    // Now we need to call push primitive if required 
+    // Now we need to call push primitive if required
     // This will push elements to the lower buffer till all the size invariants are satisfied
-    //TODO: Call push primitive 
+    //TODO: Call push primitive
   }
 }
 
@@ -60,11 +60,11 @@ int ResilientPQ::deletemin() {
   pair<int, int> min1 = findmin(this->layers[0].upBuffer, 0, this->delta+1);
   pair<int, int> min2 = findmin(this->layers[0].downBuffer, 0, this->delta+1);
   pair<int, int> min3 = findmin(this->buffer, 0, this->delta+1);
-  
+
   // Find the minimum element
   int minEle = min(min1.first, min(min2.first, min3.first));
-  
-  /** From paper :  Delete the minimum element and right shift all the elements 
+
+  /** From paper :  Delete the minimum element and right shift all the elements
       in the affected buffer from the beginning upto the position of the minimum
       --- As we are using vectors, we can erase the element at that position
   **/
@@ -110,7 +110,7 @@ void ResilientPQ::pull(size_t index) {
   if (upBufferSize > 0 && i < finalMerged.size() && i < downBuffer.size() + upBufferSize) {
     nextDownBuffer.push_back(finalMerged[i]);
   }
-  
+
   // If there are elements still left, then write them to U_{i+1}
   vector<int> nextUpBuffer;
   while (i < finalMerged.size()) {
@@ -131,9 +131,7 @@ void ResilientPQ::pull(size_t index) {
   // Now investigate all the up buffers and call push primitives on up buffers if there is an overflow
   for (size_t i = 0; i < this->layers.size(); i++) {
     if (this->layers[i].upBuffer.size() > this->layers[i].getThreshold()/2) {
-      ;
-      // TODO: Call PUSH primitive to redistribute elements from Up buffers to Down buffers
-      //push(index+1);
+      push(index+1);
     }
   }
 }
@@ -146,9 +144,61 @@ pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
     if (minEle > v1[i]) {
       minEle = v1[i];
       minPos = i;
-    }  
+    }
   }
   return pair<int, int>(minEle,minPos);
+}
+
+// PUSH primitive, accepts index of the layer on which the push function needs to be called
+// Note that PUSH primitive is called on a down buffer U_i
+// The buffers involved are U_1, D_i, and U_{i+1}
+void ResilientPQ::push(size_t index) {
+  bool isLast = (index == this->layers.size() - 1)
+  // Merge U_i and D_i
+  vector<int> merged = merge(this->layers[index].upBuffer, this->layers[index].downBuffer);
+  // Merge the vector merged and D_{i+1} (unless i is the last layer)
+  vector<int> finalMerged = merged;
+  if (!isLast) {
+    vector<int> finalMerged = merge(merged, this->layers[index+1].upBuffer);
+  }
+
+  // Now redistribute elements after merging
+  // First write first |D_i| - \delta elements to D_i
+  vector<int> downBuffer;
+  int downBufferSize = this->layers[index].downBuffer.size() - this->delta;
+  for (size_t i = 0; i < downBufferSize; i++) {
+    downBuffer.push_back(finalMerged[i]);
+  }
+  // Write remaining |U_{i+1}| + |U_i| + \delta to U_{i+1} (or D_{i+1} if i is the last layer)
+  vector<int> nextBuffer;
+  for (size_t i = downBufferSize; i < finalMerged.size(); i++) {
+    nextBuffer.push_back(finalMerged[i]);
+  }
+
+  // Replace U_i with empty up buffer
+  this->layers[index].upBuffer.clear();
+  this->layers[index].downBuffer.clear();
+  this->layers[index].downBuffer = downBuffer;
+  if (!isLast) {
+    this->layers[index+1].upBuffer.clear();
+    this->layers[index+1].upBuffer = nextBuffer;
+  } else {
+    // if i is last layer, make a new layer
+    size_t newLayerIndex = this->layers.size();
+    Layer newLayer(this->delta, this->n, this->layers[newLayerIndex - 1], newLayerIndex);
+    this->layers.push_back(newLayer);
+
+    this->layers[index+1].downBuffer.clear();
+    this->layers[index+1].downBuffer = nextBuffer;
+  }
+
+  // if new buffers violate size invariants, invoke primitives accordingly
+  if (this->layers[index+1].upBuffer.size() > this->layers[i+1].getThreshold()/2) {
+    push(index+1);
+  }
+  if (this->layers[index].downBuffer.size() < this->layers[i].getThreshold()/2) {
+    pull(index);
+  }
 }
 
 vector<int> ResilientPQ::merge(vector<int> v1, vector<int> v2) {
@@ -172,4 +222,3 @@ vector<int> ResilientPQ::merge(vector<int> v1, vector<int> v2) {
   }
   return merged;
 }
-
