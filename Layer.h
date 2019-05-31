@@ -8,13 +8,14 @@ using namespace std;
 
 class Layer {
 public:
-  Layer(size_t delta, size_t n, Layer* prev);
+  Layer(size_t delta, size_t n, Layer* prev, size_t index);
   ~Layer();
-private:
   vector<int> upBuffer;
   vector<int> downBuffer;
+private:
   Layer* prev;
   Layer* next;
+  size_t index; // Index of current layer (0-indexed)
   size_t threshold; // equal to 2 *(log^2 n + delta^2)
 };
 #endif

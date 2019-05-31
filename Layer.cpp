@@ -6,7 +6,7 @@
 
 using namespace std;
 
-Layer::Layer(size_t delta, size_t n, Layer* prev) {
+Layer::Layer(size_t delta, size_t n, Layer* prev, size_t index) {
   this->threshold = 2 * (log2(n)*log2(n) + delta * delta);
     
   this->upBuffer.resize(this->threshold/2);
@@ -14,6 +14,7 @@ Layer::Layer(size_t delta, size_t n, Layer* prev) {
 
   this->prev = prev;
   this->next = NULL;
+  this->index = index;
 }
 
 Layer::~Layer() {

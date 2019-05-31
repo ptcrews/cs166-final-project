@@ -28,6 +28,9 @@ private:
   // Layer of the priority queue
   vector<Layer> layers;
 
+  // TODO: Non-resilient merge; replace this with a call to resilient merge
+  vector<int> merge(vector<int> v1, vector<int> v2);
+
     /* Fun with C++: these next two lines disable implicitly-generated copy
    * functions that would otherwise cause weird errors if you tried to
    * implicitly copy an object of this type. You don't need to touch these
