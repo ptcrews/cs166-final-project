@@ -1,7 +1,11 @@
 #ifndef ResilientPQ_Included
 #define ResilientPQ_Included
 
+#include "Layer.h"
 #include <vector>
+#include <cstddef>
+
+using namespace std;
 
 class ResilientPQ {
 
@@ -25,5 +29,5 @@ private:
    */
   ResilientPQ(ResilientPQ const &) = delete;
   void operator=(ResilientPQ const &) = delete;
-}
+};
 #endif

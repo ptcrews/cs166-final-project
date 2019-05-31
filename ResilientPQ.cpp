@@ -13,5 +13,5 @@ void ResilientPQ::insert(int key) {
 }
 
 int ResilientPQ::deletemin() {
-
+  return -1;
 }

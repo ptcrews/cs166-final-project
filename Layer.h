@@ -2,6 +2,8 @@
 #define Layer_Included
 
 #include <vector>
+#include <cstddef>
+
 using namespace std;
 
 class Layer {
@@ -14,5 +16,5 @@ private:
   Layer* prev;
   Layer* next;
   size_t threshold; // equal to 2 *(log^2 n + delta^2)
-}
+};
 #endif
