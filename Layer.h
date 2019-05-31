@@ -12,6 +12,7 @@ public:
   ~Layer();
   vector<int> upBuffer;
   vector<int> downBuffer;
+  size_t getThreshold();
 private:
   Layer* prev;
   Layer* next;
