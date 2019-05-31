@@ -15,8 +15,7 @@ ResilientPQ::~ResilientPQ() {
 
 void ResilientPQ::insert(int key) {
   cout<<"\nInside insert function !";
-  cout<<"\n Buffer size"<<this->buffer.size();
-  cout<<"\n Theshold "<<this->bufferThreshold;
+  cout<<"\n Threshold "<<this->bufferThreshold;
   // Insertion buffer is not full; simply append the element to the insertion buffer
   if (this->buffer.size() < this->bufferThreshold) { 
     this->buffer.push_back(key);
@@ -61,15 +60,13 @@ void ResilientPQ::insert(int key) {
 }
 
 int ResilientPQ::findmin() {
-  cout<<"\n Inside findmin()";
-  cout<<"\n\n\n Layers"<<this->layers.size();
+  if (this->layers.size() < 1) {
+  	return findmin(this->buffer, 0, this->buffer.size()).first;
+  }
   // Find the minimum of first delta + 1 elements in D_0, U_0 and I
   pair<int, int> min1 = findmin(this->layers[0].upBuffer, 0, this->delta+1);
-  cout<<"\n Minimum element "<<min1.first;
   pair<int, int> min2 = findmin(this->layers[0].downBuffer, 0, this->delta+1);
-  cout<<"\n Minimum element "<<min2.first;
-  pair<int, int> min3 = findmin(this->buffer, 0, this->delta+1);
-  cout<<"\n Minimum element "<<min3.first;
+  pair<int, int> min3 = findmin(this->buffer, 0, this->buffer.size());
   // Find the minimum element
   return min(min1.first, min(min2.first, min3.first));
 }
@@ -161,7 +158,7 @@ pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
   if (v1.size() == 0) return pair<int, int>(INT_MAX, -1);
   int minPos = lo;
   int minEle = v1[lo];
-  for (size_t i = lo+1; i < hi; i++) {
+  for (size_t i = lo+1; i < v1.size() && i < hi; i++) {
     if (minEle > v1[i]) {
       minEle = v1[i];
       minPos = i;
