@@ -15,6 +15,7 @@ public:
 
   void insert(int key);
   int deletemin();
+  int findmin();
 
 private:
   vector<int> buffer;
