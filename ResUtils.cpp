@@ -7,6 +7,8 @@
 #include "ResUtils.h"
 #include <cassert>
 #include <iostream>
+#include <algorithm>
+#include <time.h>
 
 using namespace std;
 
@@ -77,8 +79,10 @@ vector<size_t> ResUtils::UnbalancedMerge(vector<size_t> A, vector<size_t> B) {
     /*
      *  b = min(B[j: j+\delta])
      */
-    while(i < A.size() || j < B.size()) {
-        auto [h, b] = scanMin(B, j, this->delta);
+    while(i < A.size() && j < B.size()) {
+        auto pair = scanMin(B, j, this->delta);
+        size_t h = pair.first;
+        size_t b = pair.second;
         rShiftVec(B, j, h);
         B[j] = b;
         j++;
@@ -104,22 +108,92 @@ vector<size_t> ResUtils::UnbalancedMerge(vector<size_t> A, vector<size_t> B) {
         out.push_back(b);
     }
 
+    for (; i < A.size(); i++) {
+        out.push_back(A[i]);
+    }
+
+    for (; j < B.size(); j++) {
+        out.push_back(B[j]);
+    }
+
     return out;
 }
 
-#define TEST_SIZE 100
-void ResUtils::testUnbalancedMerge() {
-    vector<size_t> A, B;
-    for (size_t i = 0; i < TEST_SIZE; i += 2) {
-        A.push_back(i);
-        B.push_back(i+1);
+pair<vector<size_t>, vector<size_t>> ResUtils::genRandomVectors(size_t size_A,
+        size_t size_B, size_t max_elem) {
+
+    vector<size_t> A;
+    vector<size_t> B;
+
+    A.reserve(size_A);
+    B.reserve(size_B);
+
+    for (size_t i = 0; i < size_A; i++) {
+        A.push_back(rand() % (max_elem + 1));
     }
+
+    for (size_t j = 0; j < size_B; j++) {
+        B.push_back(rand() % (max_elem + 1));
+    }
+
+    return pair<vector<size_t>, vector<size_t>>(A, B);
+}
+
+#define TEST_SIZE 100
+#define SIZE_A 100
+#define SIZE_B 50
+#define MAX_ELEM 1000
+// TODO: Test resilience
+void ResUtils::testUnbalancedMerge() {
+    vector<size_t> A, B, correctMerge;
+
+    auto seed = time(NULL);
+    cout << seed << endl;
+    srand(seed);
+    auto AB = this->genRandomVectors(SIZE_A, SIZE_B, MAX_ELEM);
+    A = AB.first;
+    B = AB.second;
+
+    sort(A.begin(), A.end());
+    sort(B.begin(), B.end());
+
+    correctMerge.reserve(SIZE_A + SIZE_B);
+    merge(A.begin(), A.end(), B.begin(), B.end(), correctMerge.begin());
 
     auto out = this->UnbalancedMerge(A, B);
 
     for (size_t i = 0; i < out.size(); i++) {
-        assert(out[i] == i);
+        cout << out[i] << " " << correctMerge[i] << endl;
+        assert(out[i] == correctMerge[i]);
     }
+    cout << endl;
 
     cout << "SUCCESS" << endl;
+}
+
+vector<size_t> ResUtils::NaiveSort(vector<size_t> F) {
+
+    return F;
+}
+
+pair<vector<size_t>, vector<size_t>> ResUtils::PurifyingMerge(vector<size_t> X, vector<size_t> Y) {
+    vector<size_t> Z, F, X_aux, Y_aux, Z_aux;
+    X_aux.reserve(2*this->delta + 1);
+    Y_aux.reserve(2*this->delta + 1);
+    Z_aux.reserve(this->delta);
+
+
+    return pair<vector<size_t>, vector<size_t>>(Z, F);
+}
+
+vector<size_t> ResUtils::ResilientMerge(vector<size_t> X, vector<size_t> Y) {
+    auto ZF = this->PurifyingMerge(X, Y);
+    vector<size_t> Z = ZF.first;
+    vector<size_t> F = ZF.second;
+
+    vector<size_t> F_prime = this->NaiveSort(F);
+
+    vector<size_t> S = this->UnbalancedMerge(Z, F_prime);
+
+    return S;
 }
