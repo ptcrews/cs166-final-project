@@ -31,6 +31,12 @@ private:
   // TODO: Non-resilient merge; replace this with a call to resilient merge
   vector<int> merge(vector<int> v1, vector<int> v2);
 
+  // Find minimum element and its position in a given range in a vector; 
+  // does a simple linear scan
+  pair<int, int> findmin(vector<int> v1, size_t lo, size_t hi);
+
+  // Delete the given element from the buffer and right shift all the elements
+
     /* Fun with C++: these next two lines disable implicitly-generated copy
    * functions that would otherwise cause weird errors if you tried to
    * implicitly copy an object of this type. You don't need to touch these
