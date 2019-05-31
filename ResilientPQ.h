@@ -35,6 +35,9 @@ private:
   // does a simple linear scan
   pair<int, int> findmin(vector<int> v1, size_t lo, size_t hi);
 
+  // PULL primitive
+  void pull(size_t index);
+
   // Delete the given element from the buffer and right shift all the elements
 
     /* Fun with C++: these next two lines disable implicitly-generated copy
