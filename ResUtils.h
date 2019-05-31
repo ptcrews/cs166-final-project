@@ -12,6 +12,7 @@ class ResUtils {
         ResUtils(size_t delta);
         std::vector<size_t> ResilientMerge(std::vector<size_t> X, std::vector<size_t> Y);
         void testUnbalancedMerge();
+        void testPurifyingMerge();
 
     private:
         size_t delta;
