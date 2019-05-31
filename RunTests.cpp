@@ -5,6 +5,7 @@ using namespace std;
 
 int main() {
   ResUtils utils(10);
-  utils.testUnbalancedMerge();
+  //utils.testUnbalancedMerge();
+  utils.testPurifyingMerge();
   return 0;
 }
