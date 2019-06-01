@@ -28,8 +28,8 @@ void testResilientPQ() {
     rpq.insert(randomNumbers[i]);
     cout<<"\n Back in testRPQ";
     cout<<"\n Expected "<<q.top();
-    cout<<"\n Actual "<<rpq.top();
-    assert(q.top() == rpq.top());
+    cout<<"\n Actual "<<rpq.findmin();
+    assert(q.top() == rpq.findmin());
   }
   /*
   cout<<"\n Now testing Deletemin()";

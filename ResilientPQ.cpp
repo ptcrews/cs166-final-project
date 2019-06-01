@@ -69,7 +69,7 @@ void ResilientPQ::insert(int key) {
   this->buffer.push_back(key);
 }
 
-int ResilientPQ::top() {
+int ResilientPQ::findmin() {
   if (this->layers.size() < 1) {
     if (this->buffer.size() == 0) return INT_MAX;
     return findmin(this->buffer, 0, this->buffer.size()).first;
