@@ -15,17 +15,13 @@ ResilientPQ::~ResilientPQ() {
 
 void ResilientPQ::insert(int key) {
   cout<<"\nInside insert function !";
-  cout<<"\n Threshold "<<this->bufferThreshold;
   // Insertion buffer is not full; simply append the element to the insertion buffer
   if (this->buffer.size() < this->bufferThreshold) {
     this->buffer.push_back(key);
-    cout<<"\n Inserted "<<key;
-    cout<<"Now returning";
     return;
   }
   // Insertion buffer is full; first sort elements in the buffer and
   //then perform a faithful merge with the up_buffer
-
   //TODO: implement resilient sorting
   sort(this->buffer.begin(), this->buffer.end());
 
@@ -36,9 +32,8 @@ void ResilientPQ::insert(int key) {
       layer.downBuffer.push_back(this->buffer[i]);
     }
     this->layers.push_back(layer);
-
   } else if (this->layers.size() == 1 && this->layers[0].downBuffer.size() < this->layers[0].getThreshold()/2) {
-    // if there is only 1 layer  (L_0) and its down buffer is not filled enough, we simply merge into D_0
+   // if there is only 1 layer  (L_0) and its down buffer is not filled enough, we simply merge into D_0
     vector<int> merged = merge(this->buffer, this->layers[0].downBuffer);
     this->layers[0].downBuffer.clear();
     this->layers[0].downBuffer = merged;
@@ -58,8 +53,12 @@ void ResilientPQ::insert(int key) {
       push(0);
     }
   }
-
+  cout<<"\nCurrent Layer sizes";
+  for (size_t i = 0; i < this->layers.size(); i++) {
+    cout<<"\nLayer"<<i<<"\n U "<<this->layers[i].upBuffer.size()<<" L "<<this->layers[i].downBuffer.size();
+  }
   this->buffer.clear(); // delete all elements from the insertion buffer
+  this->buffer.push_back(key);
 }
 
 int ResilientPQ::findmin() {
@@ -118,6 +117,7 @@ int ResilientPQ::deletemin() {
 // Note that PULL primitive is called on a down buffer D_i
 // The buffers involved are D_i, U_{i+1} and D_{i+1}
 void ResilientPQ::pull(size_t index) {
+  cout<<"\n Inside pull function";
   if (index+1 >= this->layers.size()) return; // There is no next layer; therefore no pull primitive possible
 
   // Merge D_i and U_{i+1}
@@ -134,8 +134,9 @@ void ResilientPQ::pull(size_t index) {
   }
   // Next write |D_{i+1}| - (s_i - |D_i|) - \delta to D_{i+1}
   vector<int> nextDownBuffer;
-  int upBufferSize = this->layers[index+1].downBuffer.size() - (threshold - downBuffer.size()) - this->delta;
-  if (upBufferSize > 0 && i < finalMerged.size() && i < downBuffer.size() + upBufferSize) {
+  int nextDownBufferSize = this->layers[index+1].downBuffer.size() - (threshold - downBuffer.size()) - this->delta;
+  //for (; nextDownBufferSize > 0 && i < finalMerged.size() && i < downBuffer.size() + nextDownBufferSize; i++) {
+  for (; i < finalMerged.size() && i < downBuffer.size() + nextDownBufferSize; i++) {
     nextDownBuffer.push_back(finalMerged[i]);
   }
 
@@ -152,21 +153,21 @@ void ResilientPQ::pull(size_t index) {
   this->layers[index+1].downBuffer.clear();
   this->layers[index+1].downBuffer = nextDownBuffer;
 
-  // Call PULL primitive on D_{i+1} if required; i.e. it is smaller than s_i / 2
-  if (this->layers[index+1].downBuffer.size() < this->layers[index].getThreshold()/2) {
+  // Call PULL primitive on D_{i+1} if required; i.e. it is smaller than s_{i+1} / 2
+  if (this->layers[index+1].downBuffer.size() < this->layers[index+1].getThreshold()/2) {
     pull(index+1);
   }
   // Now investigate all the up buffers and call push primitives on up buffers if there is an overflow
-  for (size_t i = 0; i < this->layers.size(); i++) {
-    if (this->layers[i].upBuffer.size() > this->layers[i].getThreshold()/2) {
-      push(index+1);
+  for (size_t j = index+1; j < this->layers.size(); j++) {
+    if (this->layers[j].upBuffer.size() > this->layers[j].getThreshold()/2) {
+      //push(index+1);
+      push(j);
     }
   }
 }
 
 // Find elements in range [lo, hi) in the given vector
 pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
-  cout<<"\n Size of v1"<<v1.size();
   if (v1.size() == 0) return pair<int, int>(INT_MAX, -1);
   int minPos = lo;
   int minEle = v1[lo];
@@ -176,6 +177,7 @@ pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
       minPos = i;
     }
   }
+  cout<<"\n Size of vector "<<v1.size()<<" minEle "<<minEle<<" minPos "<<minPos;
   return pair<int, int>(minEle,minPos);
 }
 
@@ -245,10 +247,12 @@ vector<int> ResilientPQ::merge(vector<int> v1, vector<int> v2) {
   }
   while (i < v1.size()) {
     merged.push_back(v1[i]);
+    i++;
   }
 
   while (j < v2.size()) {
     merged.push_back(v2[j]);
+    j++;
   }
   return merged;
 }
