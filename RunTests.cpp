@@ -8,12 +8,12 @@ using namespace std;
 
 int main() {
   ResUtils utils(10);
-  utils.testPurifyingMerge();
-  //utils.testNaiveSort();
-  utils.testUnbalancedMerge();
+  //utils.testPurifyingMerge();
+  utils.testNaiveSort();
+  //utils.testUnbalancedMerge();
 
   cout<<"Testing Resilient Priority Queue";
-  testResilientPQ();
+  //testResilientPQ();
   return 0;
 }
 
