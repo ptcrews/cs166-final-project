@@ -36,6 +36,9 @@ private:
   // does a simple linear scan
   pair<int, int> findmin(vector<int> v1, size_t lo, size_t hi);
 
+  // Finds the minimum element in the priority queue
+  int top();
+
   // PULL primitive
   void pull(size_t index);
 

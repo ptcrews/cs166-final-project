@@ -15,21 +15,21 @@ void testResilientPQ() {
   size_t delta = 2;
   size_t n = 100000;
   ResilientPQ rpq(delta, n);
-  
+
   cout<<"\n Generating random numbers!"<<n;
   vector<int> randomNumbers;
   for (size_t i = 0; i < n; i++) {
     randomNumbers.push_back(rand() % MAX_ELEM);
   }
-  cout<<"\n Now testing insert and findmin()";  
+  cout<<"\n Now testing insert and findmin()";
   for (size_t i = 0; i < n; i++) {
     cout<<"\n Inserting "<<i<<" "<<randomNumbers[i];
     q.push(randomNumbers[i]);
     rpq.insert(randomNumbers[i]);
     cout<<"\n Back in testRPQ";
     cout<<"\n Expected "<<q.top();
-    cout<<"\n Actual "<<rpq.findmin();
-    assert(q.top() == rpq.findmin());
+    cout<<"\n Actual "<<rpq.top();
+    assert(q.top() == rpq.top());
   }
   /*
   cout<<"\n Now testing Deletemin()";

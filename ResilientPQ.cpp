@@ -69,6 +69,19 @@ void ResilientPQ::insert(int key) {
   this->buffer.push_back(key);
 }
 
+int ResilientPQ::top() {
+  if (this->layers.size() < 1) {
+    if (this->buffer.size() == 0) return INT_MAX;
+    return findmin(this->buffer, 0, this->buffer.size()).first;
+  }
+  // Find the minimum of first delta + 1 elements in D_0, U_0 and I
+  pair<int, int> min1 = findmin(this->layers[0].upBuffer, 0, this->delta+1);
+  pair<int, int> min2 = findmin(this->layers[0].downBuffer, 0, this->delta+1);
+  pair<int, int> min3 = findmin(this->buffer, 0, this->buffer.size());
+  // Find the minimum element
+  return min(min1.first, min(min2.first, min3.first));
+}
+
 int ResilientPQ::deletemin() {
   int minEle = -1;
   if (this->layers.size() < 1) {
