@@ -8,9 +8,9 @@ using namespace std;
 
 int main() {
   ResUtils utils(10);
-  utils.testPurifyingMerge();
+  //utils.testPurifyingMerge();
   //utils.testNaiveSort();
-  utils.testUnbalancedMerge();
+  // utils.testUnbalancedMerge();
 
   cout<<"Testing Resilient Priority Queue";
   testResilientPQ();

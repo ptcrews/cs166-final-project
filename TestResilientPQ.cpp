@@ -13,18 +13,19 @@ void testResilientPQ() {
 
   priority_queue<int, vector<int>, greater<int>> q;
   size_t delta = 2;
-  size_t n = 5;
+  size_t n = 100;
   ResilientPQ rpq(delta, n);
   
-  cout<<"\n Generating random numbers!";
+  cout<<"\n Generating random numbers!"<<n;
   vector<int> randomNumbers;
   for (size_t i = 0; i < n; i++) {
     randomNumbers.push_back(rand() % MAX_ELEM);
   }
   cout<<"\n Now testing insert and findmin()";  
   for (size_t i = 0; i < n; i++) {
-    cout<<"\n Inserting "<<randomNumbers[i];
+    cout<<"\n Inserting "<<i<<" "<<randomNumbers[i];
     q.push(randomNumbers[i]);
+    cout<<"\n Inserting into RPQ";
     rpq.insert(randomNumbers[i]);
     cout<<"\n Back in testRPQ";
     cout<<"\n Asserting that the minimum of both the queues is equal";
