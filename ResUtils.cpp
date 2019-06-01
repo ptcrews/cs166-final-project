@@ -12,9 +12,39 @@
 
 using namespace std;
 
+// Miscellaneous helper functions that are not included in the class
+pair<size_t, size_t> scanMin(vector<size_t> arr, size_t offset, size_t delta);
+size_t countW(vector<size_t> arr, size_t offset, size_t delta);
+void rShiftVec(vector<size_t> arr, size_t first_pos, size_t last_pos);
+size_t partitionW(vector<size_t> W, size_t cmp, size_t offset, size_t delta, vector<size_t> out);
+
+
+/******************************************************************************/
+/*                          BEGIN PUBLIC METHODS                              */
+/******************************************************************************/
 ResUtils::ResUtils(size_t delta) {
     this->delta = delta;
 }
+
+vector<size_t> ResUtils::ResilientMerge(vector<size_t> X, vector<size_t> Y) {
+    auto ZF = this->PurifyingMerge(X, Y);
+    vector<size_t> Z = ZF.first;
+    vector<size_t> F = ZF.second;
+    vector<size_t> F_prime = this->NaiveSort(F);
+    vector<size_t> S = this->UnbalancedMerge(Z, F_prime);
+    return S;
+}
+
+vector<size_t> ResUtils::ResilientSort(vector<size_t> I) {
+    return this->mergeSort(I, &ResUtils::ResilientMerge);
+}
+/******************************************************************************/
+/*                            END PUBLIC METHODS                              */
+/******************************************************************************/
+
+/******************************************************************************/
+/*                     BEGIN INTERNAL SORT/MERGE METHODS                      */
+/******************************************************************************/
 
 pair<size_t, size_t> scanMin(vector<size_t> arr, size_t offset, size_t delta) {
     size_t min_idx = offset;
@@ -132,37 +162,6 @@ vector<size_t> ResUtils::genRandomVector(size_t vec_size,
     return vec;
 }
 
-#define TEST_SIZE 100
-#define SIZE_A 100
-#define SIZE_B 50
-#define MAX_ELEM 1000
-// TODO: Test resilience
-void ResUtils::testUnbalancedMerge() {
-    vector<size_t> A, B, correctMerge;
-
-    auto seed = time(NULL);
-    cout << seed << endl;
-    srand(seed);
-    A = genRandomVector(SIZE_A, MAX_ELEM);
-    B = genRandomVector(SIZE_B, MAX_ELEM);
-
-    sort(A.begin(), A.end());
-    sort(B.begin(), B.end());
-
-    correctMerge.reserve(SIZE_A + SIZE_B);
-    merge(A.begin(), A.end(), B.begin(), B.end(), correctMerge.begin());
-
-    auto out = this->UnbalancedMerge(A, B);
-
-    for (size_t i = 0; i < out.size(); i++) {
-        cout << out[i] << " " << correctMerge[i] << endl;
-        assert(out[i] == correctMerge[i]);
-    }
-    cout << endl;
-
-    cout << "SUCCESS" << endl;
-}
-
 // Finds the min resiliently
 size_t resilientMin(vector<size_t> vec, size_t start, size_t end) {
     size_t min_idx = start;
@@ -208,67 +207,15 @@ vector<size_t> ResUtils::NaiveMerge(vector<size_t> A, vector<size_t> B) {
 
 // Merge sort
 vector<size_t> ResUtils::NaiveSort(vector<size_t> F) {
-    for (size_t chunk_size = 1; chunk_size < F.size(); chunk_size *= 2) {
-
-        for (size_t first_arr = 0; first_arr < F.size(); first_arr += 2*chunk_size) {
-            size_t second_arr = first_arr + chunk_size;
-            size_t second_end = min(F.size(), second_arr + chunk_size);
-            if (second_arr >= F.size()) {
-                break;
-            }
-
-
-            vector<size_t> A;
-            vector<size_t> B;
-            for (size_t i = first_arr; i < first_arr + chunk_size; i++) {
-                A.push_back(F[i]);
-            }
-
-            for (size_t i = second_arr; i < second_end; i++) {
-                B.push_back(F[i]);
-            }
-
-            vector<size_t> merged = this->NaiveMerge(A, B);
-            for (size_t i = 0; i < merged.size(); i++)
-                F[first_arr + i] = merged[i];
-        }
-    }
-    return F;
-}
-
-void ResUtils::testNaiveSort() {
-    vector<size_t> unsorted, correctSort;
-
-    auto seed = time(NULL);
-    cout << seed << endl;
-    srand(seed);
-    unsorted = genRandomVector(100, 2*MAX_ELEM);
-    correctSort = unsorted;
-
-    cout << unsorted[0];
-    sort(correctSort.begin(), correctSort.end());
-    cout << unsorted[0];
-
-    //vector<size_t> resSorted = NaiveSort(unsorted);
-    vector<size_t> resSorted = ResilientSort(unsorted);
-
-    cout << endl;
-    for (size_t i = 0; i < correctSort.size(); i++) {
-        cout << resSorted[i] << " " << correctSort[i] << "\t";
-        assert(correctSort[i] == resSorted[i]);
-    }
-    cout << endl;
-    cout << "SUCCESS" << endl;
+    return this->mergeSort(F, &ResUtils::NaiveMerge);
 }
 
 size_t handleInversion(vector<size_t>& working, vector<size_t>& main, vector<size_t>& F, size_t main_idx, size_t working_idx) {
-    cout << "HANDLING INVERSION: " << working[working_idx] << " " << working[working_idx+1] << endl;
     // Reset
     F.push_back(working[working_idx]);
     F.push_back(working[working_idx+1]);
     // TODO: Inefficient
     working.erase(working.begin() + working_idx, working.begin() + working_idx + 2);
-    cout << "HANDLING INVERSION: " << working[working_idx] << " " << working[working_idx+1] << endl;
     // Check bounds
     if (main_idx < main.size()) {
         working.push_back(main[main_idx++]);
@@ -283,8 +230,6 @@ size_t refillArray(vector<size_t> &arr, vector<size_t> parent, size_t target, si
     size_t room_left = target - arr.size();
     size_t amount = min(room_left, parent.size() - parent_idx);
     size_t refill_count = amount;
-    cout << "Refill count: " << refill_count << endl;
-    cout << parent.size() << " " << parent_idx << "  " << room_left <<  " " << refill_count << endl;
 
     for (size_t i = 0; i < refill_count; i++) {
         arr.push_back(parent[parent_idx + i]);
@@ -295,8 +240,7 @@ size_t refillArray(vector<size_t> &arr, vector<size_t> parent, size_t target, si
 bool safetyCheck(vector<size_t> &XY_aux, size_t offset, size_t top) {
     for (size_t i = offset; i < XY_aux.size(); i++) {
         if (top > XY_aux[i]) {
-            // Find inversion
-            cout << "Found inversion in sanity check: " << top << " " << i<< endl;
+            // Found inversion
             return false;
         }
     }
@@ -326,22 +270,15 @@ pair<vector<size_t>, vector<size_t>> ResUtils::PurifyingMerge(vector<size_t> X, 
     x_idx = refillArray(X_aux, X, 2*this->delta + 1, x_idx);
     y_idx = refillArray(Y_aux, Y, 2*this->delta + 1, y_idx);
     while(X_aux.size() > 0 || Y_aux.size() > 0) {
-        cout << "STATS" << endl;
-        cout << i << " " << X_aux.size() << " " << x_idx << " " << X.size() << endl;
-        cout << j << " " << Y_aux.size() << " " << y_idx << " " << Y.size() << endl;
-        cout << "END STATS" << endl;
 
         // While Z_aux is not full
         while (Z_aux.size() < this->delta && (i < X_aux.size() || j < Y_aux.size())) {
             // If Y_aux is empty or X_aux nonempty and X_aux top less than Y_aux top
             if (Y_aux.size() <= j || (X_aux.size() > i && X_aux[i] <= Y_aux[j])) {
-                cout << "In first if branch: "<< Y_aux.size() << " " << j << " " << X_aux.size() << " " << i << endl;
                 if (X_aux.size() <= i+1 || X_aux[i] <= X_aux[i+1]) {
                     // Append element
-                    cout << "In inner condition" << endl;
                     Z_aux.push_back(X_aux[i++]);
                 } else {
-                    cout << "X INVERSION" << endl;
                     x_idx = handleInversion(X_aux, X, F, x_idx, i);
                     // Reset indices
                     Z_aux.clear();
@@ -353,7 +290,6 @@ pair<vector<size_t>, vector<size_t>> ResUtils::PurifyingMerge(vector<size_t> X, 
                     // Append element
                     Z_aux.push_back(Y_aux[j++]);
                 } else {
-                    cout << "Y INVERSION" << endl;
                     y_idx = handleInversion(Y_aux, Y, F, y_idx, j);
                     // Reset indices
                     Z_aux.clear();
@@ -362,15 +298,8 @@ pair<vector<size_t>, vector<size_t>> ResUtils::PurifyingMerge(vector<size_t> X, 
             }
         }
 
-        cout << "END OF FN BEFORE Z CALL" << endl;
-        cout << i << " " << X_aux.size() << " " << x_idx << " " << X.size() << endl;
-        cout << j << " " << Y_aux.size() << " " << y_idx << " " << Y.size() << endl;
-        cout << "END" << endl;
-
         // If Z_aux full
-        cout << "Z_AUX SIZE: " << Z_aux.size() << endl;
         if (Z_aux.size() == this->delta || (j == Y_aux.size() && i == X_aux.size())) {
-            cout << "HERE!!!!" << endl;
             size_t z_top = Z_aux[Z_aux.size() -1];
 
             if (!safetyCheck(X_aux, i, z_top)) {
@@ -402,7 +331,6 @@ pair<vector<size_t>, vector<size_t>> ResUtils::PurifyingMerge(vector<size_t> X, 
             y_idx = refillArray(Y_aux, Y, 2*this->delta + 1, y_idx);
         }
 
-        cout << "HERE 2" << endl;
     }
 
     if (Z_aux.size() != 0) {
@@ -414,19 +342,7 @@ pair<vector<size_t>, vector<size_t>> ResUtils::PurifyingMerge(vector<size_t> X, 
     return pair<vector<size_t>, vector<size_t>>(Z, F);
 }
 
-vector<size_t> ResUtils::ResilientMerge(vector<size_t> X, vector<size_t> Y) {
-    auto ZF = this->PurifyingMerge(X, Y);
-    vector<size_t> Z = ZF.first;
-    vector<size_t> F = ZF.second;
-
-    vector<size_t> F_prime = this->NaiveSort(F);
-
-    vector<size_t> S = this->UnbalancedMerge(Z, F_prime);
-
-    return S;
-}
-
-vector<size_t> ResUtils::ResilientSort(vector<size_t> I) {
+vector<size_t> ResUtils::mergeSort(vector<size_t> I, MergeFunction mergeFunction) {
     for (size_t chunk_size = 1; chunk_size < I.size(); chunk_size *= 2) {
 
         for (size_t first_arr = 0; first_arr < I.size(); first_arr += 2*chunk_size) {
@@ -435,7 +351,6 @@ vector<size_t> ResUtils::ResilientSort(vector<size_t> I) {
             if (second_arr >= I.size()) {
                 break;
             }
-
 
             vector<size_t> A;
             vector<size_t> B;
@@ -447,7 +362,7 @@ vector<size_t> ResUtils::ResilientSort(vector<size_t> I) {
                 B.push_back(I[i]);
             }
 
-            vector<size_t> merged = this->ResilientMerge(A, B);
+            vector<size_t> merged = (this->*mergeFunction)(A, B);
             for (size_t i = 0; i < merged.size(); i++)
                 I[first_arr + i] = merged[i];
         }
@@ -455,15 +370,140 @@ vector<size_t> ResUtils::ResilientSort(vector<size_t> I) {
     return I;
 }
 
+/******************************************************************************/
+/*                       END INTERNAL SORT/MERGE METHODS                      */
+/******************************************************************************/
+
+/******************************************************************************/
+/*                         BEGIN TESTING METHODS                              */
+/******************************************************************************/
+bool isMergeCorrect(vector<size_t> result, vector<size_t> reference, bool exact, string testname);
+
+#define TEST_SIZE 100
+#define MAX_SIZE_A 1000
+#define MAX_DELTA 20
+#define SIZE_A 100
+#define SIZE_B 50
+#define MAX_ELEM 1000
+
+void ResUtils::testAllMerge() {
+    vector<size_t> A, B;
+    auto seed = time(NULL);
+    cout << seed << endl;
+    srand(seed);
+
+    size_t size_A = rand() % MAX_SIZE_A;
+    size_t size_B = rand() % (size_A - 1);
+    size_t delta = rand() % MAX_DELTA;
+    A = genRandomVector(size_A, MAX_ELEM);
+    B = genRandomVector(size_B, MAX_ELEM);
+
+    sort(A.begin(), A.end());
+    sort(B.begin(), B.end());
+
+    this->testAllMerge(delta, A, B);
+}
+
+// A.size() <= B.size()
+void ResUtils::testAllMerge(size_t delta, vector<size_t> A, vector<size_t> B) {
+    this->delta = delta;
+
+    // Test merge methods in increasing order of implementation complexity
+    vector<size_t> reference, naiveResult, unbalancedResult, purifyingResult, resilientResult;
+
+    reference.reserve(A.size() + B.size());
+    merge(A.begin(), A.end(), B.begin(), B.end(), back_inserter(reference));
+
+    naiveResult = this->NaiveMerge(A, B);
+    unbalancedResult = this->UnbalancedMerge(A, B);
+    purifyingResult = this->PurifyingMerge(A, B).first;
+    resilientResult = this->ResilientMerge(A, B);
+
+    assert(isMergeCorrect(naiveResult, reference, true, "Naive"));
+    assert(isMergeCorrect(unbalancedResult, reference, true, "Unbalanced"));
+    assert(isMergeCorrect(purifyingResult, reference, false, "Purifying"));
+    assert(isMergeCorrect(resilientResult, reference, true, "Resilient"));
+}
+
+bool isMergeCorrect(vector<size_t> result, vector<size_t> reference, bool exact, string testname) {
+    bool correct = true;
+    if (exact) {
+        if (result.size() != reference.size()) {
+            cout << "Error: Mismatch in merge test: " << testname << endl;
+            cout << "Sizes do not match: ";
+            cout << result.size() << " " << reference.size() << endl;
+            correct = false;
+        }
+        for (size_t i = 0; i < reference.size(); i++) {
+            if (result[i] != reference[i]) {
+                // Incorrect result
+                correct = false;
+                cout << "Error: Mismatch in merge test: " << testname << endl;
+                cout << "Values differ at: " << i << " with values: ";
+                cout << result[i] << " " << reference[i] << endl;
+            }
+        }
+    } else {
+        // Check faithfully ordered
+        size_t res_index = 0;
+        for (size_t i = 0; i < reference.size(); i++) {
+            if (result[res_index] == reference[i]) {
+                res_index++;
+                if (res_index > result.size()) {
+                    break;
+                }
+            }
+        }
+        if (res_index < result.size()) {
+            cout << "Error: Mismatch in approx merge test: "<< testname << endl;
+            cout << "Res index: " << res_index << endl;
+            correct = false;
+        }
+    }
+    if (correct) {
+        cout << "Success: Merge test passed for: " << testname << endl;
+    }
+    return correct;
+}
+
+void ResUtils::testAllSort() {
+
+}
+
 // TODO: Test resilience
+void ResUtils::testUnbalancedMerge() {
+    vector<size_t> A, B, correctMerge;
+
+    auto seed = time(NULL);
+    cout << seed << endl;
+    srand(seed);
+    A = genRandomVector(SIZE_A, MAX_ELEM);
+    B = genRandomVector(SIZE_B, MAX_ELEM);
+
+    sort(A.begin(), A.end());
+    sort(B.begin(), B.end());
+
+    correctMerge.reserve(SIZE_A + SIZE_B);
+    merge(A.begin(), A.end(), B.begin(), B.end(), correctMerge.begin());
+
+    auto out = this->UnbalancedMerge(A, B);
+
+    for (size_t i = 0; i < out.size(); i++) {
+        cout << out[i] << " " << correctMerge[i] << endl;
+        assert(out[i] == correctMerge[i]);
+    }
+    cout << endl;
+
+    cout << "SUCCESS" << endl;
+}
 void ResUtils::testPurifyingMerge() {
     vector<size_t> A, B, correctMerge;
 
     auto seed = time(NULL);
     cout << seed << endl;
     srand(seed);
-    A = genRandomVector(15, MAX_ELEM);
-    B = genRandomVector(27, MAX_ELEM);
+    A = genRandomVector(33, MAX_ELEM);
+    B = genRandomVector(29, MAX_ELEM);
 
     sort(A.begin(), A.end());
     sort(B.begin(), B.end());
@@ -514,3 +554,32 @@ void ResUtils::testPurifyingMerge() {
 
     cout << "SUCCESS" << endl;
 }
+
+void ResUtils::testNaiveSort() {
+    vector<size_t> unsorted, correctSort;
+
+    auto seed = time(NULL);
+    cout << seed << endl;
+    srand(seed);
+    unsorted = genRandomVector(100, 2*MAX_ELEM);
+    correctSort = unsorted;
+
+    cout << unsorted[0];
+    sort(correctSort.begin(), correctSort.end());
+    cout << unsorted[0];
+
+    vector<size_t> resSorted = NaiveSort(unsorted);
+    //vector<size_t> resSorted = ResilientSort(unsorted);
+
+    cout << endl;
+    for (size_t i = 0; i < correctSort.size(); i++) {
+        cout << resSorted[i] << " " << correctSort[i] << "\t";
+        assert(correctSort[i] == resSorted[i]);
+    }
+    cout << endl;
+    cout << "SUCCESS" << endl;
+}
+
+/******************************************************************************/
+/*                           END TESTING METHODS                              */
+/******************************************************************************/
