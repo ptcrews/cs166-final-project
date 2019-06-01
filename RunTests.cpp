@@ -9,10 +9,10 @@ using namespace std;
 
 int main() {
   ResUtils utils(10);
-  utils.testAllMerge();
-  utils.testAllSort();
+//  utils.testAllMerge();
+//  utils.testAllSort();
 
   cout<<"Testing Resilient Priority Queue";
-  //testResilientPQ();
+  testResilientPQ();
   return 0;
 }

@@ -41,6 +41,9 @@ private:
 
   // PUSH primitive
   void push(size_t index);
+  
+  //Print RPQ
+  void printRPQ();
 
   // Delete the given element from the buffer and right shift all the elements
 
