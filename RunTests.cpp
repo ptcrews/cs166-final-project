@@ -12,8 +12,7 @@ int main() {
   utils.testAllMerge();
   utils.testAllSort();
 
-
-  cout<<"Testing Resilient Priority Queue";
+  cout << "Testing Resilient Priority Queue" << endl;
   testResilientPQ();
   return 0;
 }
