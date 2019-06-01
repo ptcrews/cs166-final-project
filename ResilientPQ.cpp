@@ -41,7 +41,7 @@ void ResilientPQ::insert(int key) {
     // There are elements in the up buffer;
     // TODO: Call resilient merge
     vector<int> merged = merge(this->buffer, this->layers[0].upBuffer);
-
+    this->layers[0].upBuffer.clear();
     // Add all elements into the upBuffer (U_0)
     for (size_t i = 0; i < merged.size(); i++) {
       this->layers[0].upBuffer.push_back(merged[i]);
@@ -50,13 +50,21 @@ void ResilientPQ::insert(int key) {
     // Now we need to call push primitive if required
     // This will push elements to the lower buffer till all the size invariants are satisfied
     if (this->layers[0].upBuffer.size() > this->layers[0].getThreshold()/2) {
+      cout<<"\n Upbuffer overflow ! Calling PUSH";
       push(0);
     }
   }
-  cout<<"\nCurrent Layer sizes";
+
+  cout<<"\nCurrent Layer sizes "<<this->bufferThreshold;
+  size_t total = 0;
   for (size_t i = 0; i < this->layers.size(); i++) {
+    cout<<"\nLayer"<<i<<" Threshold "<<this->layers[i].getThreshold();
     cout<<"\nLayer"<<i<<"\n U "<<this->layers[i].upBuffer.size()<<" L "<<this->layers[i].downBuffer.size();
+    total += this->layers[i].upBuffer.size() + this->layers[i].downBuffer.size();
   }
+  total += this->buffer.size();
+  cout<<"\n Total elements in RPQ "<<total;
+
   this->buffer.clear(); // delete all elements from the insertion buffer
   this->buffer.push_back(key);
 }
@@ -117,8 +125,8 @@ int ResilientPQ::deletemin() {
 // Note that PULL primitive is called on a down buffer D_i
 // The buffers involved are D_i, U_{i+1} and D_{i+1}
 void ResilientPQ::pull(size_t index) {
-  cout<<"\n Inside pull function";
-  if (index+1 >= this->layers.size()) return; // There is no next layer; therefore no pull primitive possible
+  cout<<"\n Inside PULL; index "<<index<<" Layers "<<this->layers.size();
+  if (index+1 == this->layers.size()) return; // There is no next layer; therefore no pull primitive possible
 
   // Merge D_i and U_{i+1}
   vector<int> merged = merge(this->layers[index].downBuffer, this->layers[index+1].upBuffer);
@@ -157,6 +165,15 @@ void ResilientPQ::pull(size_t index) {
   if (this->layers[index+1].downBuffer.size() < this->layers[index+1].getThreshold()/2) {
     pull(index+1);
   }
+  cout<<"\nBefore PUSH; Current Layer sizes "<<this->bufferThreshold;
+  size_t total = 0;
+  for (size_t i = 0; i < this->layers.size(); i++) {
+    cout<<"\nLayer"<<i<<" Threshold "<<this->layers[i].getThreshold();
+    cout<<"\nLayer"<<i<<"\n U "<<this->layers[i].upBuffer.size()<<" L "<<this->layers[i].downBuffer.size();
+    total += this->layers[i].upBuffer.size() + this->layers[i].downBuffer.size();
+  }
+  total += this->buffer.size();
+  cout<<"\n Total elements in RPQ "<<total;
   // Now investigate all the up buffers and call push primitives on up buffers if there is an overflow
   for (size_t j = index+1; j < this->layers.size(); j++) {
     if (this->layers[j].upBuffer.size() > this->layers[j].getThreshold()/2) {
@@ -186,9 +203,10 @@ pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
 // The buffers involved are U_1, D_i, and U_{i+1} (or D_{i+1} if i is the last layer)
 void ResilientPQ::push(size_t index) {
   bool isLast = (index == this->layers.size() - 1);
+  cout<<"\n Inside PUSH; index "<<index<<" isLast "<<isLast<<" Layers "<<this->layers.size();
   // Merge U_i and D_i
   vector<int> merged = merge(this->layers[index].upBuffer, this->layers[index].downBuffer);
-  // Merge the vector merged and D_{i+1} (unless i is the last layer)
+  // Merge the vector merged and U_{i+1} (unless i is the last layer)
   vector<int> finalMerged = merged;
   if (!isLast) {
     vector<int> finalMerged = merge(merged, this->layers[index+1].upBuffer);
@@ -223,12 +241,24 @@ void ResilientPQ::push(size_t index) {
     this->layers[index+1].downBuffer.clear();
     this->layers[index+1].downBuffer = nextBuffer;
   }
-
+  cout<<" Checking size of U_{i+1} "<<index+1<<"Size "<<this->layers[index+1].upBuffer.size();
   // if new buffers violate size invariants, invoke primitives accordingly
   if (this->layers[index+1].upBuffer.size() > this->layers[index+1].getThreshold()/2) {
     push(index+1);
   }
+  cout<<"\n Before PULL; Layer sizes";
+  cout<<"\nCurrent Layer sizes "<<this->bufferThreshold;
+  size_t total = 0;
+  for (size_t i = 0; i < this->layers.size(); i++) {
+    cout<<"\nLayer"<<i<<" Threshold "<<this->layers[i].getThreshold();
+    cout<<"\nLayer"<<i<<"\n U "<<this->layers[i].upBuffer.size()<<" L "<<this->layers[i].downBuffer.size();
+    total += this->layers[i].upBuffer.size() + this->layers[i].downBuffer.size();
+  }
+  total += this->buffer.size();
+  cout<<"\n Total elements in RPQ "<<total;
+
   if (this->layers[index].downBuffer.size() < this->layers[index].getThreshold()/2) {
+    cout<<"\n Calling PULL primitive";
     pull(index);
   }
 }
