@@ -54,7 +54,7 @@ void ResilientPQ::insert(int key) {
       push(0);
     }
   }
-  
+
   cout<<"\nCurrent Layer sizes "<<this->bufferThreshold;
   size_t total = 0;
   for (size_t i = 0; i < this->layers.size(); i++) {
@@ -64,22 +64,22 @@ void ResilientPQ::insert(int key) {
   }
   total += this->buffer.size();
   cout<<"\n Total elements in RPQ "<<total;
-  
+
   this->buffer.clear(); // delete all elements from the insertion buffer
   this->buffer.push_back(key);
 }
 
-int ResilientPQ::findmin() {
-  if (this->layers.size() < 1) {
-    if (this->buffer.size() == 0) return INT_MAX;
-    return findmin(this->buffer, 0, this->buffer.size()).first;
+pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
+  if (v1.size() == 0 || lo >= hi) return make_pair(INT_MAX, -1);
+  int value = INT_MAX;
+  int index = lo;
+  for (size_t i = lo; i < hi; i++) {
+    if (value > v1[i]) {
+      index = i;
+      value = v1[i];
+    }
   }
-  // Find the minimum of first delta + 1 elements in D_0, U_0 and I
-  pair<int, int> min1 = findmin(this->layers[0].upBuffer, 0, this->delta+1);
-  pair<int, int> min2 = findmin(this->layers[0].downBuffer, 0, this->delta+1);
-  pair<int, int> min3 = findmin(this->buffer, 0, this->buffer.size());
-  // Find the minimum element
-  return min(min1.first, min(min2.first, min3.first));
+  return make_pair(value, index);
 }
 
 int ResilientPQ::deletemin() {
@@ -256,7 +256,7 @@ void ResilientPQ::push(size_t index) {
   }
   total += this->buffer.size();
   cout<<"\n Total elements in RPQ "<<total;
-  
+
   if (this->layers[index].downBuffer.size() < this->layers[index].getThreshold()/2) {
     cout<<"\n Calling PULL primitive";
     pull(index);
