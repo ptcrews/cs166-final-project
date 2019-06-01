@@ -396,7 +396,7 @@ void ResUtils::testAllMerge() {
 
     size_t size_A = rand() % MAX_SIZE_A;
     size_t size_B = rand() % (size_A - 1);
-    size_t delta = rand() % MAX_DELTA;
+    size_t delta = rand() % MAX_DELTA + 1;
     A = genRandomVector(size_A, MAX_ELEM);
     B = genRandomVector(size_B, MAX_ELEM);
 
@@ -472,7 +472,7 @@ void ResUtils::testAllSort() {
     vector<size_t> A;
 
     size_t size_A = rand() % MAX_SIZE_A;
-    size_t delta = rand() % MAX_DELTA;
+    size_t delta = rand() % MAX_DELTA + 1;
     A = genRandomVector(size_A, MAX_ELEM);
 
     this->testAllSort(delta, A);

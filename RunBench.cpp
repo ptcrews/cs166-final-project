@@ -82,6 +82,19 @@ double vectorAvg(vector<size_t> vec) {
   return ((double) total) / vec.size();
 }
 
+size_t benchmarkInsertReference(size_t elem, priority_queue<size_t>& refpq) {
+  auto start = chrono::high_resolution_clock::now();
+  refpq.push(elem);
+  auto end = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+  return 0;
+  //return pair<string, size_t>("", duration.count());
+}
+
+size_t benchmarkInsertResilientPQ() {
+  return 0;
+}
+
 void macroRunRefPQ(vector<size_t> elems, priority_queue<size_t>& refpq) {
   for (size_t e : elems){
     refpq.push(e);
