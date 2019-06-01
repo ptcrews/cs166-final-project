@@ -228,11 +228,7 @@ vector<size_t> ResUtils::NaiveSort(vector<size_t> F) {
                 B.push_back(F[i]);
             }
 
-            //vector<size_t> merged(A.size() + B.size());
-            //merge(A.begin(), A.end(), B.begin(), B.end(), merged.begin());
             vector<size_t> merged = this->NaiveMerge(A, B);
-
-
             for (size_t i = 0; i < merged.size(); i++)
                 F[first_arr + i] = merged[i];
         }
@@ -253,7 +249,8 @@ void ResUtils::testNaiveSort() {
     sort(correctSort.begin(), correctSort.end());
     cout << unsorted[0];
 
-    vector<size_t> resSorted = NaiveSort(unsorted);
+    //vector<size_t> resSorted = NaiveSort(unsorted);
+    vector<size_t> resSorted = ResilientSort(unsorted);
 
     cout << endl;
     for (size_t i = 0; i < correctSort.size(); i++) {
@@ -261,14 +258,17 @@ void ResUtils::testNaiveSort() {
         assert(correctSort[i] == resSorted[i]);
     }
     cout << endl;
+    cout << "SUCCESS" << endl;
 }
 
 size_t handleInversion(vector<size_t>& working, vector<size_t>& main, vector<size_t>& F, size_t main_idx, size_t working_idx) {
+    cout << "HANDLING INVERSION: " << working[working_idx] << " " << working[working_idx+1] << endl;
     // Reset
     F.push_back(working[working_idx]);
     F.push_back(working[working_idx+1]);
     // TODO: Inefficient
     working.erase(working.begin() + working_idx, working.begin() + working_idx + 2);
+    cout << "HANDLING INVERSION: " << working[working_idx] << " " << working[working_idx+1] << endl;
     // Check bounds
     if (main_idx < main.size()) {
         working.push_back(main[main_idx++]);
@@ -284,7 +284,7 @@ size_t refillArray(vector<size_t> &arr, vector<size_t> parent, size_t target, si
     size_t amount = min(room_left, parent.size() - parent_idx);
     size_t refill_count = amount;
     cout << "Refill count: " << refill_count << endl;
-    cout << parent.size() << " " << parent_idx << "  " << room_left << endl;
+    cout << parent.size() << " " << parent_idx << "  " << room_left <<  " " << refill_count << endl;
 
     for (size_t i = 0; i < refill_count; i++) {
         arr.push_back(parent[parent_idx + i]);
@@ -292,109 +292,122 @@ size_t refillArray(vector<size_t> &arr, vector<size_t> parent, size_t target, si
     return parent_idx + refill_count;
 }
 
+bool safetyCheck(vector<size_t> &XY_aux, size_t offset, size_t top) {
+    for (size_t i = offset; i < XY_aux.size(); i++) {
+        if (top > XY_aux[i]) {
+            // Find inversion
+            cout << "Found inversion in sanity check: " << top << " " << i<< endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+size_t findInversion(vector<size_t> &XY_aux, size_t offset, vector<size_t> &XY, size_t xy_idx, vector<size_t> &F) {
+
+    for (size_t i = offset; i < XY_aux.size() - 1; i++) {
+        if (XY_aux[i] > XY_aux[i + 1]) {
+            return handleInversion(XY_aux, XY, F, xy_idx, i);
+        }
+    }
+    // THIS SHOULD NOT HAPPEN
+    assert(false);
+    return 0;
+}
+
 pair<vector<size_t>, vector<size_t>> ResUtils::PurifyingMerge(vector<size_t> X, vector<size_t> Y) {
     vector<size_t> Z, F, X_aux, Y_aux, Z_aux;
-    //X_aux.reserve(2*this->delta + 1);
-    //Y_aux.reserve(2*this->delta + 1);
-    Z_aux.reserve(this->delta);
+    //Z_aux.reserve(this->delta);
 
     size_t x_idx = 0, y_idx = 0;
     // X_aux, Y_aux full; Z_aux empty
-    size_t i = 0, j = 0, k = 0;
+    size_t i = 0, j = 0;
 
     x_idx = refillArray(X_aux, X, 2*this->delta + 1, x_idx);
     y_idx = refillArray(Y_aux, Y, 2*this->delta + 1, y_idx);
     while(X_aux.size() > 0 || Y_aux.size() > 0) {
-        /*
         cout << "STATS" << endl;
-        cout << i << " " << X_aux.size() << " " << X.size() << endl;
-        cout << j << " " << Y_aux.size() << " " << Y.size() << endl;
+        cout << i << " " << X_aux.size() << " " << x_idx << " " << X.size() << endl;
+        cout << j << " " << Y_aux.size() << " " << y_idx << " " << Y.size() << endl;
         cout << "END STATS" << endl;
-        */
 
-        // If Y_aux is empty or X_aux nonempty and X_aux top less than Y_aux top
-        if (Y_aux.size() <= j || (X_aux.size() > i && X_aux[i] <= Y_aux[j])) {
-            if (X_aux.size() <= i+1 || X_aux[i] <= X_aux[i+1]) {
-                // Append element
-                Z_aux[k++] = X_aux[i++];
+        // While Z_aux is not full
+        while (Z_aux.size() < this->delta && (i < X_aux.size() || j < Y_aux.size())) {
+            // If Y_aux is empty or X_aux nonempty and X_aux top less than Y_aux top
+            if (Y_aux.size() <= j || (X_aux.size() > i && X_aux[i] <= Y_aux[j])) {
+                cout << "In first if branch: "<< Y_aux.size() << " " << j << " " << X_aux.size() << " " << i << endl;
+                if (X_aux.size() <= i+1 || X_aux[i] <= X_aux[i+1]) {
+                    // Append element
+                    cout << "In inner condition" << endl;
+                    Z_aux.push_back(X_aux[i++]);
+                } else {
+                    cout << "X INVERSION" << endl;
+                    x_idx = handleInversion(X_aux, X, F, x_idx, i);
+                    // Reset indices
+                    Z_aux.clear();
+                    i = 0, j = 0;
+                }
+            // TODO: Confirm don't need additional guards here
             } else {
-                x_idx = handleInversion(X_aux, X, F, x_idx, i);
-                // Reset indices
-                i = 0, j = 0, k = 0;
-            }
-        // TODO: Confirm don't need additional guards here
-        } else {
-            if (Y_aux.size() <= j+1 || Y_aux[j] <= Y_aux[j+1]) {
-                // Append element
-                Z_aux[k++] = Y_aux[j++];
-            } else {
-                y_idx = handleInversion(Y_aux, Y, F, y_idx, j);
-                // Reset indices
-                i = 0, j = 0, k = 0;
+                if (Y_aux.size() <= j+1 || Y_aux[j] <= Y_aux[j+1]) {
+                    // Append element
+                    Z_aux.push_back(Y_aux[j++]);
+                } else {
+                    cout << "Y INVERSION" << endl;
+                    y_idx = handleInversion(Y_aux, Y, F, y_idx, j);
+                    // Reset indices
+                    Z_aux.clear();
+                    i = 0, j = 0;
+                }
             }
         }
+
+        cout << "END OF FN BEFORE Z CALL" << endl;
+        cout << i << " " << X_aux.size() << " " << x_idx << " " << X.size() << endl;
+        cout << j << " " << Y_aux.size() << " " << y_idx << " " << Y.size() << endl;
+        cout << "END" << endl;
 
         // If Z_aux full
-        //cout << k << endl;
-        if (k == this->delta) {
-            bool x_inversion = false, y_inversion = false;
-            for (size_t i_tmp = i; i_tmp < X_aux.size(); i_tmp++) {
-                if (Z_aux[k] > X_aux[i_tmp]) {
-                    // Find inversion
-                    x_inversion = true;
-                    break;
-                }
+        cout << "Z_AUX SIZE: " << Z_aux.size() << endl;
+        if (Z_aux.size() == this->delta || (j == Y_aux.size() && i == X_aux.size())) {
+            cout << "HERE!!!!" << endl;
+            size_t z_top = Z_aux[Z_aux.size() -1];
+
+            if (!safetyCheck(X_aux, i, z_top)) {
+                x_idx = findInversion(X_aux, i, X, x_idx, F);
+                Z_aux.clear();
+                i = 0, j = 0;
+                continue;
             }
 
-            for (size_t j_tmp = j; j_tmp < Y_aux.size(); j_tmp++) {
-                if (Z_aux[k] > Y_aux[j_tmp]) {
-                    // Find inversion
-                    y_inversion = true;
-                    break;
-                }
+            if (!safetyCheck(Y_aux, j, z_top)) {
+                y_idx = findInversion(Y_aux, j, Y, y_idx, F);
+                Z_aux.clear();
+                i = 0, j = 0;
+                continue;
             }
 
-            if (x_inversion) {
-                for (size_t i_tmp = i; i_tmp < X_aux.size()-1; i_tmp++) {
-                    if (X_aux[i_tmp] > X_aux[i_tmp+1]) {
-                        x_idx = handleInversion(X_aux, X, F, x_idx, i_tmp);
-                        break;
-                    }
-                }
-                i = 0, j = 0, k = 0;
-            }
-
-            if (y_inversion) {
-                for (size_t j_tmp = j; j_tmp < Y_aux.size()-1; j_tmp++) {
-                    if (Y_aux[j_tmp] > Y_aux[j_tmp+1]) {
-                        y_idx = handleInversion(Y_aux, Y, F, y_idx, j_tmp);
-                        break;
-                    }
-                }
-                i = 0, j = 0, k = 0;
-            }
-        }
-
-        if (k != 0) {
-            for (size_t k_tmp = 0; k_tmp <= k; k_tmp++) {
-                Z.push_back(Z_aux[k_tmp]);
-                k = 0;
+            for (size_t k = 0; k < Z_aux.size(); k++) {
+                Z.push_back(Z_aux[k]);
             }
             if (i > 0) {
-                X_aux.erase(X_aux.begin(), X_aux.begin() + i + 1);
+                X_aux.erase(X_aux.begin(), X_aux.begin() + i);
             }
             if (j > 0) {
-                Y_aux.erase(Y_aux.begin(), Y_aux.begin() + j + 1);
+                Y_aux.erase(Y_aux.begin(), Y_aux.begin() + j);
             }
+            Z_aux.clear();
             i = 0, j = 0;
             x_idx = refillArray(X_aux, X, 2*this->delta + 1, x_idx);
             y_idx = refillArray(Y_aux, Y, 2*this->delta + 1, y_idx);
         }
+
+        cout << "HERE 2" << endl;
     }
 
-    if (k != 0) {
-        for (size_t k_tmp = 0; k_tmp <= k; k_tmp++) {
-            Z.push_back(Z_aux[k_tmp]);
+    if (Z_aux.size() != 0) {
+        for (size_t k = 0; k < Z_aux.size(); k++) {
+            Z.push_back(Z_aux[k]);
         }
     }
 
@@ -414,7 +427,31 @@ vector<size_t> ResUtils::ResilientMerge(vector<size_t> X, vector<size_t> Y) {
 }
 
 vector<size_t> ResUtils::ResilientSort(vector<size_t> I) {
-    // TODO: Implement
+    for (size_t chunk_size = 1; chunk_size < I.size(); chunk_size *= 2) {
+
+        for (size_t first_arr = 0; first_arr < I.size(); first_arr += 2*chunk_size) {
+            size_t second_arr = first_arr + chunk_size;
+            size_t second_end = min(I.size(), second_arr + chunk_size);
+            if (second_arr >= I.size()) {
+                break;
+            }
+
+
+            vector<size_t> A;
+            vector<size_t> B;
+            for (size_t i = first_arr; i < first_arr + chunk_size; i++) {
+                A.push_back(I[i]);
+            }
+
+            for (size_t i = second_arr; i < second_end; i++) {
+                B.push_back(I[i]);
+            }
+
+            vector<size_t> merged = this->ResilientMerge(A, B);
+            for (size_t i = 0; i < merged.size(); i++)
+                I[first_arr + i] = merged[i];
+        }
+    }
     return I;
 }
 
@@ -437,8 +474,8 @@ void ResUtils::testPurifyingMerge() {
     B[15] = B[16];
     B[16] = second;
 
-    A[22] = 2*MAX_ELEM;
-    A[31] = 0;
+    B[10] = 2*MAX_ELEM;
+    B[22] = 0;
 
     correctMerge.reserve(SIZE_A + SIZE_B);
     merge(A.begin(), A.end(), B.begin(), B.end(), correctMerge.begin());
@@ -446,6 +483,16 @@ void ResUtils::testPurifyingMerge() {
     auto ZF = this->PurifyingMerge(A, B);
     auto Z = ZF.first;
     auto F = ZF.second;
+
+    cout << "A: ";
+    for (size_t i = 0; i < A.size(); i++)
+        cout << A[i] << " ";
+    cout << endl;
+
+    cout << "B: ";
+    for (size_t i = 0; i < B.size(); i++)
+        cout << B[i] << " ";
+    cout << endl;
 
     cout << "Z: ";
     for (size_t i = 0; i < Z.size(); i++)
