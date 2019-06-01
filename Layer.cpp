@@ -7,7 +7,7 @@
 using namespace std;
 
 Layer::Layer(size_t delta, size_t n, Layer* prev, size_t index) {
-  this->threshold = 2 * (log2(n)*log2(n) + delta * delta);
+  this->threshold = pow(2, index+1) * (log2(n)*log2(n) + delta * delta);
   this->prev = prev;
   this->next = NULL;
   this->index = index;

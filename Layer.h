@@ -17,6 +17,6 @@ private:
   Layer* prev;
   Layer* next;
   size_t index; // Index of current layer (0-indexed)
-  size_t threshold; // equal to 2 *(log^2 n + delta^2)
+  size_t threshold; // equal to 2^{i+1} *(log^2 n + delta^2)
 };
 #endif
