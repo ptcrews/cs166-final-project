@@ -27,7 +27,7 @@ void ResilientPQ::insert(int key) {
 
   //Check if a merge is required; Not required if layers haven't been initialized
   if (this->layers.size() == 0) {
-    Layer layer(delta, n, NULL, 0); 
+    Layer layer(delta, n, NULL, 0);
     for (size_t i = 0; i < this->buffer.size(); i++) {
       layer.downBuffer.push_back(this->buffer[i]);
     }
@@ -125,8 +125,8 @@ int ResilientPQ::deletemin() {
 // Note that PULL primitive is called on a down buffer D_i
 // The buffers involved are D_i, U_{i+1} and D_{i+1}
 void ResilientPQ::pull(size_t index) {
-  cout<<"\nInside PULL";
-  if (index+1 >= this->layers.size()) return; // There is no next layer; therefore no pull primitive possible
+  cout<<"\n Inside pull function";
+  if (index+1 == this->layers.size()) return; // There is no next layer; therefore no pull primitive possible
 
   // Merge D_i and U_{i+1}
   vector<int> merged = merge(this->layers[index].downBuffer, this->layers[index+1].upBuffer);
@@ -142,8 +142,9 @@ void ResilientPQ::pull(size_t index) {
   }
   // Next write |D_{i+1}| - (s_i - |D_i|) - \delta to D_{i+1}
   vector<int> nextDownBuffer;
-  int upBufferSize = this->layers[index+1].downBuffer.size() - (threshold - downBuffer.size()) - this->delta;
-  if (upBufferSize > 0 && i < finalMerged.size() && i < downBuffer.size() + upBufferSize) {
+  int nextDownBufferSize = this->layers[index+1].downBuffer.size() - (threshold - downBuffer.size()) - this->delta;
+  //for (; nextDownBufferSize > 0 && i < finalMerged.size() && i < downBuffer.size() + nextDownBufferSize; i++) {
+  for (; i < finalMerged.size() && i < downBuffer.size() + nextDownBufferSize; i++) {
     nextDownBuffer.push_back(finalMerged[i]);
   }
 
@@ -160,14 +161,15 @@ void ResilientPQ::pull(size_t index) {
   this->layers[index+1].downBuffer.clear();
   this->layers[index+1].downBuffer = nextDownBuffer;
 
-  // Call PULL primitive on D_{i+1} if required; i.e. it is smaller than s_i / 2
-  if (this->layers[index+1].downBuffer.size() < this->layers[index].getThreshold()/2) {
+  // Call PULL primitive on D_{i+1} if required; i.e. it is smaller than s_{i+1} / 2
+  if (this->layers[index+1].downBuffer.size() < this->layers[index+1].getThreshold()/2) {
     pull(index+1);
   }
   // Now investigate all the up buffers and call push primitives on up buffers if there is an overflow
-  for (size_t i = 0; i < this->layers.size(); i++) {
-    if (this->layers[i].upBuffer.size() > this->layers[i].getThreshold()/2) {
-      push(index+1);
+  for (size_t j = index+1; j < this->layers.size(); j++) {
+    if (this->layers[j].upBuffer.size() > this->layers[j].getThreshold()/2) {
+      //push(index+1);
+      push(j);
     }
   }
 }
@@ -191,8 +193,8 @@ pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
 // Note that PUSH primitive is called on an up buffer U_i
 // The buffers involved are U_1, D_i, and U_{i+1} (or D_{i+1} if i is the last layer)
 void ResilientPQ::push(size_t index) {
-  cout<<"\n Inside PUSH";
   bool isLast = (index == this->layers.size() - 1);
+  cout<<"\n Inside PUSH; index "<<index<<" isLast "<<isLast<<" Layers "<<this->layers.size();
   // Merge U_i and D_i
   vector<int> merged = merge(this->layers[index].upBuffer, this->layers[index].downBuffer);
   // Merge the vector merged and U_{i+1} (unless i is the last layer)
