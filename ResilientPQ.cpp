@@ -61,7 +61,8 @@ void ResilientPQ::insert(int key) {
 
 int ResilientPQ::findmin() {
   if (this->layers.size() < 1) {
-  	return findmin(this->buffer, 0, this->buffer.size()).first;
+    if (this->buffer.size() == 0) return INT_MAX;
+    return findmin(this->buffer, 0, this->buffer.size()).first;
   }
   // Find the minimum of first delta + 1 elements in D_0, U_0 and I
   pair<int, int> min1 = findmin(this->layers[0].upBuffer, 0, this->delta+1);
@@ -72,24 +73,32 @@ int ResilientPQ::findmin() {
 }
 
 int ResilientPQ::deletemin() {
-  // Find the minimum of first delta + 1 elements in D_0, U_0 and I
-  pair<int, int> min1 = findmin(this->layers[0].upBuffer, 0, this->delta+1);
-  pair<int, int> min2 = findmin(this->layers[0].downBuffer, 0, this->delta+1);
-  pair<int, int> min3 = findmin(this->buffer, 0, this->delta+1);
+  int minEle = -1;
+  if (this->layers.size() < 1) {
+    pair<int, int> min1 = findmin(this->buffer, 0, this->buffer.size());
+    minEle = min1.first;
+    this->buffer.erase(this->buffer.begin() + min1.second);
+    // SInce no layers exist, we return
+    return minEle;
+  } else {
+    // Find the minimum of first delta + 1 elements in D_0, U_0 and I
+    pair<int, int> min1 = findmin(this->layers[0].upBuffer, 0, this->delta+1);
+    pair<int, int> min2 = findmin(this->layers[0].downBuffer, 0, this->delta+1);
+    pair<int, int> min3 = findmin(this->buffer, 0, this->buffer.size());
 
-  // Find the minimum element
-  int minEle = min(min1.first, min(min2.first, min3.first));
-
-  /** From paper :  Delete the minimum element and right shift all the elements
+    // Find the minimum element
+    minEle = min(min1.first, min(min2.first, min3.first));
+    /** From paper :  Delete the minimum element and right shift all the elements
       in the affected buffer from the beginning upto the position of the minimum
       --- As we are using vectors, we can erase the element at that position
-  **/
-  if (minEle == min1.first) {
-    this->layers[0].upBuffer.erase(this->layers[0].upBuffer.begin() + min1.second);
-  } else if (minEle == min2.first) {
-    this->layers[0].downBuffer.erase(this->layers[0].downBuffer.begin() + min2.second);
-  } else {
-    this->buffer.erase(this->layers[0].downBuffer.begin() + min3.second);
+    **/
+    if (minEle == min1.first) {
+      this->layers[0].upBuffer.erase(this->layers[0].upBuffer.begin() + min1.second);
+    } else if (minEle == min2.first) {
+      this->layers[0].downBuffer.erase(this->layers[0].downBuffer.begin() + min2.second);
+    } else {
+      this->buffer.erase(this->buffer.begin() + min3.second);
+    }
   }
   // TODO : Check if all the invariants hold; Call pull primitive if required
   // Check if D_0 underflows i.e. it has less than s_i/2 elements
