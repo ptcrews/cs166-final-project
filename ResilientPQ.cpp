@@ -69,19 +69,6 @@ void ResilientPQ::insert(int key) {
   this->buffer.push_back(key);
 }
 
-pair<int, int> ResilientPQ::findmin(vector<int> v1, size_t lo, size_t hi) {
-  if (v1.size() == 0 || lo >= hi) return make_pair(INT_MAX, -1);
-  int value = INT_MAX;
-  int index = lo;
-  for (size_t i = lo; i < hi; i++) {
-    if (value > v1[i]) {
-      index = i;
-      value = v1[i];
-    }
-  }
-  return make_pair(value, index);
-}
-
 int ResilientPQ::deletemin() {
   int minEle = -1;
   if (this->layers.size() < 1) {
