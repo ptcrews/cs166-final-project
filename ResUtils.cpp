@@ -25,7 +25,7 @@ pair<size_t, size_t> scanMin(vector<size_t> arr, size_t offset, size_t delta) {
             min_idx = i;
         }
     }
-    return pair(min_idx, arr[min_idx]);
+    return pair<size_t, size_t>(min_idx, arr[min_idx]);
 }
 
 // Returns the count of keys smaller than A[i] in A[i+1; i + 2\delta + 1]
