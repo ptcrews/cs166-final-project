@@ -26,9 +26,9 @@ void testResilientPQ() {
     cout<<"\n Inserting "<<i<<" "<<randomNumbers[i];
     q.push(randomNumbers[i]);
     rpq.insert(randomNumbers[i]);
-    cout<<"\n Back in testRPQ";
-    cout<<"\n Expected "<<q.top();
-    cout<<"\n Actual "<<rpq.findmin();
+    //cout<<"\n Back in testRPQ";
+    //cout<<"\n Expected "<<q.top();
+    //cout<<"\n Actual "<<rpq.findmin();
     assert(q.top() == rpq.findmin());
   }
   /*
