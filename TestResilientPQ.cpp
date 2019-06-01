@@ -13,7 +13,7 @@ void testResilientPQ() {
 
   priority_queue<int, vector<int>, greater<int>> q;
   size_t delta = 2;
-  size_t n = 20000;
+  size_t n = 100000;
   ResilientPQ rpq(delta, n);
   
   cout<<"\n Generating random numbers!"<<n;
