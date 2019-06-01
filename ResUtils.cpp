@@ -5,6 +5,7 @@
  */
 
 #include "ResUtils.h"
+#include <chrono>
 #include <cassert>
 #include <iostream>
 #include <algorithm>
@@ -24,6 +25,9 @@ size_t partitionW(vector<size_t> W, size_t cmp, size_t offset, size_t delta, vec
 /******************************************************************************/
 ResUtils::ResUtils(size_t delta) {
     this->delta = delta;
+    auto seed = time(NULL);
+    cout << "Seed: " << seed << endl;
+    srand(seed);
 }
 
 vector<size_t> ResUtils::ResilientMerge(vector<size_t> X, vector<size_t> Y) {
@@ -378,9 +382,10 @@ vector<size_t> ResUtils::mergeSort(vector<size_t> I, MergeFunction mergeFunction
 /*                         BEGIN TESTING METHODS                              */
 /******************************************************************************/
 bool isMergeCorrect(vector<size_t> result, vector<size_t> reference, bool exact, string testname);
+bool isSortCorrect(vector<size_t> result, vector<size_t> reference, string testname);
 
 #define TEST_SIZE 100
-#define MAX_SIZE_A 1000
+#define MAX_SIZE_A 100000
 #define MAX_DELTA 20
 #define SIZE_A 100
 #define SIZE_B 50
@@ -388,9 +393,6 @@ bool isMergeCorrect(vector<size_t> result, vector<size_t> reference, bool exact,
 
 void ResUtils::testAllMerge() {
     vector<size_t> A, B;
-    auto seed = time(NULL);
-    cout << seed << endl;
-    srand(seed);
 
     size_t size_A = rand() % MAX_SIZE_A;
     size_t size_B = rand() % (size_A - 1);
@@ -467,7 +469,42 @@ bool isMergeCorrect(vector<size_t> result, vector<size_t> reference, bool exact,
 }
 
 void ResUtils::testAllSort() {
+    vector<size_t> A;
 
+    size_t size_A = rand() % MAX_SIZE_A;
+    size_t delta = rand() % MAX_DELTA;
+    A = genRandomVector(size_A, MAX_ELEM);
+
+    this->testAllSort(delta, A);
+}
+
+void ResUtils::testAllSort(size_t delta, vector<size_t> A) {
+    this->delta = delta;
+
+    // Test merge methods in increasing order of implementation complexity
+    vector<size_t> reference, naiveResult, unbalancedResult, purifyingResult, resilientResult;
+
+    reference = A;
+    sort(reference.begin(), reference.end());
+
+    naiveResult = this->NaiveSort(A);
+    resilientResult = this->ResilientSort(A);
+
+    assert(isSortCorrect(naiveResult, reference, "Naive"));
+    assert(isSortCorrect(resilientResult, reference, "Resilient"));
+}
+
+bool isSortCorrect(vector<size_t> result, vector<size_t> reference, string testname) {
+    if (result.size() != reference.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < reference.size(); i++) {
+        if (result[i] != reference[i]) {
+            return false;
+        }
+    }
+    cout << "Success: Sort test passed for: " << testname << endl;
+    return true;
 }
 
 // TODO: Test resilience
@@ -578,6 +615,78 @@ void ResUtils::testNaiveSort() {
     }
     cout << endl;
     cout << "SUCCESS" << endl;
+}
+
+// Run a single test
+vector<pair<string, size_t>> ResUtils::benchAllMerge(size_t size_A, size_t size_B, size_t delta) {
+    this->delta = delta;
+    vector<size_t> A, B;
+
+    // Test merge methods in increasing order of implementation complexity
+    vector<size_t> reference, naiveResult, unbalancedResult, purifyingResult, resilientResult;
+
+    vector<pair<string, size_t>> timing_info;
+
+    A = genRandomVector(size_A, MAX_ELEM);
+    B = genRandomVector(size_B, MAX_ELEM);
+
+    sort(A.begin(), A.end());
+    sort(B.begin(), B.end());
+
+    reference.reserve(A.size() + B.size());
+
+    timing_info.push_back(benchRefMerge(A, B));
+    timing_info.push_back(benchNaiveMerge(A, B));
+    timing_info.push_back(benchUnbalancedMerge(A, B));
+    timing_info.push_back(benchPurifyingMerge(A, B));
+    timing_info.push_back(benchResilientMerge(A, B));
+
+    return timing_info;
+}
+
+pair<string, size_t> ResUtils::benchRefMerge(vector<size_t> A, vector<size_t> B) {
+    vector<size_t> reference;
+    auto start = chrono::high_resolution_clock::now();
+    merge(A.begin(), A.end(), B.begin(), B.end(), back_inserter(reference));
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Reference", duration.count());
+}
+
+pair<string, size_t> ResUtils::benchNaiveMerge(vector<size_t> A, vector<size_t> B) {
+    auto start = chrono::high_resolution_clock::now();
+    this->NaiveMerge(A, B);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Naive", duration.count());
+}
+
+pair<string, size_t> ResUtils::benchUnbalancedMerge(vector<size_t> A, vector<size_t> B) {
+    auto start = chrono::high_resolution_clock::now();
+    this->UnbalancedMerge(A, B);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Unbalanced", duration.count());
+}
+
+pair<string, size_t> ResUtils::benchPurifyingMerge(vector<size_t> A, vector<size_t> B) {
+    auto start = chrono::high_resolution_clock::now();
+    this->PurifyingMerge(A, B).first;
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Purifying", duration.count());
+}
+
+pair<string, size_t> ResUtils::benchResilientMerge(vector<size_t> A, vector<size_t> B) {
+    auto start = chrono::high_resolution_clock::now();
+    this->ResilientMerge(A, B);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Resilient", duration.count());
+}
+
+void ResUtils::benchAllSort() {
+
 }
 
 /******************************************************************************/
