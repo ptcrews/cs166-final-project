@@ -13,15 +13,20 @@
 
 using namespace std;
 
-#define NUM_TESTS 1
-#define DELTA 10
+#define NUM_TESTS 10
+#define DELTA 5
 const vector<size_t> TEST_SIZES = {10, 100, 1000, 10000, 100000, 1000000};
 
 // Macrobenchmark functions
 void runMacroBenchmarks();
 void runSingleMacroBenchmark(size_t delta, size_t numTests, size_t arr_size);
-pair<string, vector<size_t>> benchmarkInsertResilientPQ(vector<size_t> elems, size_t delta);
-pair<string, vector<size_t>> benchmarkInsertReference(vector<size_t> elems);
+vector<size_t> benchmarkInsertReference(vector<size_t> elems, priority_queue<size_t>& refpq);
+vector<size_t> benchmarkInsertResilientPQ(vector<size_t> elems, ResilientPQ& rpq);
+size_t benchmarkFindReference(priority_queue<size_t>& refpq);
+size_t benchmarkFindResilientPQ(ResilientPQ& rpq);
+
+vector<size_t> benchmarkDeleteReference(size_t count, priority_queue<size_t>& refpq);
+vector<size_t> benchmarkDeleteResilientPQ(size_t count, ResilientPQ& rpq);
 
 // Microbenchmark functions
 void runMicroBenchmarks();
@@ -29,8 +34,9 @@ void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size);
 
 // Misc utilities
 vector<size_t> genRandomVec(size_t size, size_t max_elem);
-void printStats(map<string, vector<size_t>> stats, string prefix, string title);
+void printStats(map<string, vector<double>> stats, string prefix, string title);
 double vectorAvg(vector<size_t> vec);
+double vectorAvg(vector<double> vec);
 
 int main() {
   cout << "**************************************************" << endl;
@@ -45,8 +51,18 @@ int main() {
 }
 
 void runMacroBenchmarks() {
+  cout << endl;
+  cout << "**************************************************" << endl;
+  cout << "************** BEGIN MACROBENCHMARK **************" << endl;
+  cout << "**************************************************" << endl;
+  cout << endl;
   for (size_t test_size : TEST_SIZES)
-    runSingleMacroBenchmark(100, NUM_TESTS, test_size);
+    runSingleMacroBenchmark(DELTA, NUM_TESTS, test_size);
+  cout << endl;
+  cout << "**************************************************" << endl;
+  cout << "**************  END MACROBENCHMARK ***************" << endl;
+  cout << "**************************************************" << endl;
+  cout << endl;
 }
 
 #define MAX_ELEM 1000
@@ -59,21 +75,33 @@ void runSingleMacroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
   string test_prefix = "Macrobench:" + to_string(delta) + ","
     + to_string(numTests) + "," + to_string(arr_size) + ": ";
 
-  vector<size_t> random_elements = genRandomVec(arr_size, MAX_ELEM);
+  map<string, vector<double>> stats;
 
-  map<string, vector<size_t>> insert_stats;
   for (size_t i = 0; i < numTests; i++) {
-    auto ref = benchmarkInsertReference(random_elements);
-    insert_stats[ref.first] = ref.second;
-    auto res = benchmarkInsertResilientPQ(random_elements, delta);
-    insert_stats[res.first] = res.second;
+    vector<size_t> random_elements = genRandomVec(arr_size, MAX_ELEM);
+    priority_queue<size_t> refpq;
+    ResilientPQ rpq(delta, random_elements.size());
+
+    auto ref_insert = benchmarkInsertReference(random_elements, refpq);
+    auto res_insert = benchmarkInsertResilientPQ(random_elements, rpq);
+    stats["Insert: Reference:"].push_back(vectorAvg(ref_insert));
+    stats["Insert: Resilient:"].push_back(vectorAvg(res_insert));
+
+    size_t ref_find = benchmarkFindReference(refpq);
+    size_t res_find = benchmarkFindResilientPQ(rpq);
+    stats["Find: Reference"].push_back(ref_find);
+    stats["Find: Resilient"].push_back(res_find);
+
+    auto ref_delete = benchmarkDeleteReference(random_elements.size(), refpq);
+    auto res_delete = benchmarkDeleteResilientPQ(random_elements.size(), rpq);
+    stats["Delete: Reference:"].push_back(vectorAvg(ref_delete));
+    stats["Delete: Resilient:"].push_back(vectorAvg(res_delete));
   }
-  printStats(insert_stats, test_prefix, title);
+  printStats(stats, test_prefix, title);
 }
 
 // In ns
-pair<string, vector<size_t>> benchmarkInsertReference(vector<size_t> elems) {
-  priority_queue<size_t> refpq;
+vector<size_t> benchmarkInsertReference(vector<size_t> elems, priority_queue<size_t>& refpq) {
   vector<size_t> timing;
   for (auto elem: elems) {
     auto start = chrono::high_resolution_clock::now();
@@ -82,11 +110,10 @@ pair<string, vector<size_t>> benchmarkInsertReference(vector<size_t> elems) {
     auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
     timing.push_back(duration.count());
   }
-  return pair<string, vector<size_t>>("Reference", timing);
+  return timing;
 }
 
-pair<string, vector<size_t>> benchmarkInsertResilientPQ(vector<size_t> elems, size_t delta) {
-  ResilientPQ rpq(delta, elems.size());
+vector<size_t> benchmarkInsertResilientPQ(vector<size_t> elems, ResilientPQ& rpq) {
   vector<size_t> timing;
   for (auto elem: elems) {
     auto start = chrono::high_resolution_clock::now();
@@ -95,12 +122,61 @@ pair<string, vector<size_t>> benchmarkInsertResilientPQ(vector<size_t> elems, si
     auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
     timing.push_back(duration.count());
   }
-  return pair<string, vector<size_t>>("Resilient", timing);
+  return timing;
+}
+
+size_t benchmarkFindReference(priority_queue<size_t>& refpq) {
+  auto start = chrono::high_resolution_clock::now();
+  refpq.top();
+  auto end = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+  return duration.count();
+}
+size_t benchmarkFindResilientPQ(ResilientPQ& rpq) {
+  auto start = chrono::high_resolution_clock::now();
+  rpq.findmin();
+  auto end = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+  return duration.count();
+}
+
+vector<size_t> benchmarkDeleteReference(size_t count, priority_queue<size_t>& refpq) {
+  vector<size_t> timing;
+  for (size_t i = 0; i < count; i++) {
+    auto start = chrono::high_resolution_clock::now();
+    refpq.pop();
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    timing.push_back(duration.count());
+  }
+  return timing;
+}
+
+vector<size_t> benchmarkDeleteResilientPQ(size_t count, ResilientPQ& rpq) {
+  vector<size_t> timing;
+  for (size_t i = 0; i < count; i++) {
+    auto start = chrono::high_resolution_clock::now();
+    rpq.deletemin();
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    timing.push_back(duration.count());
+  }
+  return timing;
 }
 
 void runMicroBenchmarks() {
+  cout << endl;
+  cout << "**************************************************" << endl;
+  cout << "************** BEGIN MICROBENCHMARK **************" << endl;
+  cout << "**************************************************" << endl;
+  cout << endl;
   for (size_t test_size : TEST_SIZES)
-    runSingleMicroBenchmark(10, NUM_TESTS, test_size);
+    runSingleMicroBenchmark(DELTA, NUM_TESTS, test_size);
+  cout << endl;
+  cout << "**************************************************" << endl;
+  cout << "**************  END MICROBENCHMARK ***************" << endl;
+  cout << "**************************************************" << endl;
+  cout << endl;
 }
 
 void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
@@ -111,7 +187,7 @@ void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
   string test_prefix = "Microbench:" + to_string(delta) + ","
     + to_string(numTests) + "," + to_string(arr_size) + ": ";
 
-  map<string, vector<size_t>> stats;
+  map<string, vector<double>> stats;
   ResUtils util = ResUtils(delta);
   for (size_t i = 0; i < numTests; i++) {
     vector<pair<string, size_t>> single_test = util.benchAllMerge(arr_size, arr_size, delta);
@@ -123,13 +199,20 @@ void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
 }
 
 // Everything should be in ns
-void printStats(map<string, vector<size_t>> stats, string prefix, string title) {
+void printStats(map<string, vector<double>> stats, string prefix, string title) {
   cout << "*****START TEST*****" << endl;
   cout << title << endl;
   for (auto e: stats) {
     cout << prefix + e.first << "\t" << vectorAvg(e.second) << " ns" << endl;
   }
   cout << "*****END TEST*****" << endl;
+}
+
+double vectorAvg(vector<double> vec) {
+  size_t total = 0;
+  for (size_t v : vec)
+    total += v;
+  return ((double) total) / vec.size();
 }
 
 double vectorAvg(vector<size_t> vec) {
