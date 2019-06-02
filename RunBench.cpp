@@ -15,7 +15,7 @@ using namespace std;
 
 #define DELTA 5
 const vector<size_t> TEST_SIZES = {  10,  100, 1000, 10000, 100000, 1000000};
-const vector<size_t> NUM_TESTS  = {1000, 1000, 1000,   100,     10,      10};
+const vector<size_t> NUM_TESTS  = {1000, 1000, 1000,   100,     10,       1};
 
 // Macrobenchmark functions
 void runMacroBenchmarks();
