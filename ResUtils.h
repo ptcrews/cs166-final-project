@@ -7,6 +7,9 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include "Corrupter.h"
+
+#define CORRUPT_ELEMS 0
 
 class ResUtils {
     public:
@@ -20,7 +23,7 @@ class ResUtils {
         void testAllMerge();
 
         std::vector<std::pair<std::string, size_t>> benchAllMerge(size_t size_A, size_t size_B, size_t delta);
-        void benchAllSort();
+        std::vector<std::pair<std::string, size_t>> benchAllSort(size_t arr_size, size_t delta);
 
     private:
 
@@ -28,6 +31,7 @@ class ResUtils {
 
         typedef std::vector<size_t> (ResUtils::*SortFunction)(std::vector<size_t>);
 
+        Corrupter corrupter;
         size_t delta;
 
         // Internal sort and merge variants
@@ -52,6 +56,11 @@ class ResUtils {
         std::pair<std::string, size_t> benchUnbalancedMerge(std::vector<size_t> A, std::vector<size_t> B);
         std::pair<std::string, size_t> benchPurifyingMerge(std::vector<size_t> A, std::vector<size_t> B);
         std::pair<std::string, size_t> benchResilientMerge(std::vector<size_t> A, std::vector<size_t> B);
+
+
+        std::pair<std::string, size_t> benchRefSort(std::vector<size_t> A);
+        std::pair<std::string, size_t> benchNaiveSort(std::vector<size_t> A);
+        std::pair<std::string, size_t> benchResilientSort(std::vector<size_t> A);
 
         std::vector<size_t> genRandomVector(size_t vec_size, size_t max_elem);
 

@@ -42,7 +42,7 @@ int main() {
   cout << "**************************************************" << endl;
   cout << "***************** BEGIN BENCHMARK ****************" << endl;
   cout << "**************************************************" << endl;
-  runMacroBenchmarks();
+  //runMacroBenchmarks();
   runMicroBenchmarks();
   cout << "**************************************************" << endl;
   cout << "****************** END BENCHMARK *****************" << endl;
@@ -197,7 +197,7 @@ void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
   map<string, vector<double>> stats;
   ResUtils util = ResUtils(delta);
   for (size_t i = 0; i < numTests; i++) {
-    vector<pair<string, size_t>> single_test = util.benchAllMerge(arr_size, arr_size, delta);
+    vector<pair<string, size_t>> single_test = util.benchAllSort(arr_size, delta);
     for (auto e: single_test) {
       stats[e.first].push_back(e.second);
     }

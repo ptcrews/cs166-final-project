@@ -23,14 +23,17 @@ size_t partitionW(vector<size_t> W, size_t cmp, size_t offset, size_t delta, vec
 /******************************************************************************/
 /*                          BEGIN PUBLIC METHODS                              */
 /******************************************************************************/
-ResUtils::ResUtils(size_t delta) {
+ResUtils::ResUtils(size_t delta) : corrupter(((double)1000)/5, delta) {
     this->delta = delta;
     auto seed = time(NULL);
-    //cout << "Seed: " << seed << endl;
     srand(seed);
+    this->corrupter = Corrupter(((double)5)/10, delta);
 }
 
 vector<size_t> ResUtils::ResilientMerge(vector<size_t> X, vector<size_t> Y) {
+    #if CORRUPT_ELEMS == 1
+        this->corrupter.CorruptArray(X);
+    #endif
     auto ZF = this->PurifyingMerge(X, Y);
     vector<size_t> Z = ZF.first;
     vector<size_t> F = ZF.second;
@@ -40,7 +43,11 @@ vector<size_t> ResUtils::ResilientMerge(vector<size_t> X, vector<size_t> Y) {
 }
 
 vector<size_t> ResUtils::ResilientSort(vector<size_t> I) {
-    return this->mergeSort(I, &ResUtils::ResilientMerge);
+    #if CORRUPT_ELEMS == 1
+        return this->mergeSort(I, &ResUtils::NaiveMerge);
+    #else
+        return this->mergeSort(I, &ResUtils::ResilientMerge);
+    #endif
 }
 /******************************************************************************/
 /*                            END PUBLIC METHODS                              */
@@ -685,8 +692,45 @@ pair<string, size_t> ResUtils::benchResilientMerge(vector<size_t> A, vector<size
     return pair<string, size_t>("Resilient", duration.count());
 }
 
-void ResUtils::benchAllSort() {
+vector<pair<string, size_t>> ResUtils::benchAllSort(size_t arr_size, size_t delta) {
+    this->delta = delta;
+    vector<size_t> A;
 
+    vector<size_t> reference, naiveSort, resilientSort;
+
+    vector<pair<string, size_t>> timing_info;
+
+    A = genRandomVector(arr_size, MAX_ELEM);
+
+    timing_info.push_back(benchRefSort(A));
+    timing_info.push_back(benchNaiveSort(A));
+    timing_info.push_back(benchResilientSort(A));
+
+    return timing_info;
+}
+
+pair<string, size_t> ResUtils::benchRefSort(vector<size_t> A) {
+    auto start = chrono::high_resolution_clock::now();
+    vector<size_t> ref = A;
+    sort(ref.begin(), ref.end());
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Reference", duration.count());
+}
+
+pair<string, size_t> ResUtils::benchNaiveSort(vector<size_t> A) {
+    auto start = chrono::high_resolution_clock::now();
+    this->NaiveSort(A);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Naive", duration.count());
+}
+pair<string, size_t> ResUtils::benchResilientSort(vector<size_t> A) {
+    auto start = chrono::high_resolution_clock::now();
+    this->ResilientSort(A);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end - start);
+    return pair<string, size_t>("Resilient", duration.count());
 }
 
 /******************************************************************************/
