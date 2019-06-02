@@ -13,9 +13,9 @@
 
 using namespace std;
 
-#define NUM_TESTS 10
 #define DELTA 5
-const vector<size_t> TEST_SIZES = {10, 100, 1000, 10000, 100000, 1000000};
+const vector<size_t> TEST_SIZES = {  10,  100, 1000, 10000, 100000, 1000000};
+const vector<size_t> NUM_TESTS  = {1000, 1000, 1000,   100,     10,      10};
 
 // Macrobenchmark functions
 void runMacroBenchmarks();
@@ -56,8 +56,8 @@ void runMacroBenchmarks() {
   cout << "************** BEGIN MACROBENCHMARK **************" << endl;
   cout << "**************************************************" << endl;
   cout << endl;
-  for (size_t test_size : TEST_SIZES)
-    runSingleMacroBenchmark(DELTA, NUM_TESTS, test_size);
+  for (size_t i = 0; i < TEST_SIZES.size(); i++)
+    runSingleMacroBenchmark(DELTA, NUM_TESTS[i], TEST_SIZES[i]);
   cout << endl;
   cout << "**************************************************" << endl;
   cout << "**************  END MACROBENCHMARK ***************" << endl;
@@ -80,21 +80,28 @@ void runSingleMacroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
   for (size_t i = 0; i < numTests; i++) {
     vector<size_t> random_elements = genRandomVec(arr_size, MAX_ELEM);
     priority_queue<size_t> refpq;
-    ResilientPQ rpq(delta, random_elements.size());
+    ResilientPQ cpq(delta, random_elements.size(), false);
+    ResilientPQ rpq(delta, random_elements.size(), true);
 
     auto ref_insert = benchmarkInsertReference(random_elements, refpq);
+    auto cache_insert = benchmarkInsertResilientPQ(random_elements, cpq);
     auto res_insert = benchmarkInsertResilientPQ(random_elements, rpq);
     stats["Insert: Reference:"].push_back(vectorAvg(ref_insert));
+    stats["Insert: Cache Oblivious:"].push_back(vectorAvg(cache_insert));
     stats["Insert: Resilient:"].push_back(vectorAvg(res_insert));
 
     size_t ref_find = benchmarkFindReference(refpq);
+    size_t cache_find = benchmarkFindResilientPQ(cpq);
     size_t res_find = benchmarkFindResilientPQ(rpq);
     stats["Find: Reference"].push_back(ref_find);
+    stats["Find: Cache Oblivious"].push_back(cache_find);
     stats["Find: Resilient"].push_back(res_find);
 
     auto ref_delete = benchmarkDeleteReference(random_elements.size(), refpq);
+    auto cache_delete = benchmarkDeleteResilientPQ(random_elements.size(), cpq);
     auto res_delete = benchmarkDeleteResilientPQ(random_elements.size(), rpq);
     stats["Delete: Reference:"].push_back(vectorAvg(ref_delete));
+    stats["Delete: Cache Oblivious:"].push_back(vectorAvg(cache_delete));
     stats["Delete: Resilient:"].push_back(vectorAvg(res_delete));
   }
   printStats(stats, test_prefix, title);
@@ -170,8 +177,8 @@ void runMicroBenchmarks() {
   cout << "************** BEGIN MICROBENCHMARK **************" << endl;
   cout << "**************************************************" << endl;
   cout << endl;
-  for (size_t test_size : TEST_SIZES)
-    runSingleMicroBenchmark(DELTA, NUM_TESTS, test_size);
+  for (size_t i = 0; i < TEST_SIZES.size(); i++)
+    runSingleMicroBenchmark(DELTA, NUM_TESTS[i], TEST_SIZES[i]);
   cout << endl;
   cout << "**************************************************" << endl;
   cout << "**************  END MICROBENCHMARK ***************" << endl;

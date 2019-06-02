@@ -26,7 +26,7 @@ size_t partitionW(vector<size_t> W, size_t cmp, size_t offset, size_t delta, vec
 ResUtils::ResUtils(size_t delta) {
     this->delta = delta;
     auto seed = time(NULL);
-    cout << "Seed: " << seed << endl;
+    //cout << "Seed: " << seed << endl;
     srand(seed);
 }
 

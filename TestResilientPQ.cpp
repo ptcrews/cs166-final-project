@@ -8,20 +8,18 @@
 
 #define MAX_ELEM 1000
 
-void testResilientPQ() {
-  srand(time(NULL));
-
+void testResilientPQ(bool is_resilient) {
   priority_queue<size_t, vector<size_t>, greater<size_t>> q;
   size_t delta = 5;
   size_t n = 200000;
-  ResilientPQ rpq(delta, n);
+  ResilientPQ rpq(delta, n, is_resilient);
 
-  cout<<"\n Generating random numbers!"<<n;
+  cout << "Generating random numbers!"<< n << endl;
   vector<size_t> randomNumbers;
   for (size_t i = 0; i < n; i++) {
     randomNumbers.push_back(rand() % MAX_ELEM);
   }
-  cout<<"\n Now testing insert and findmin()";
+  cout<<"Now testing insert and findmin()" << endl;
   for (size_t i = 0; i < n; i++) {
     //cout<<"\n Inserting "<<i<<" "<<randomNumbers[i];
     q.push(randomNumbers[i]);
@@ -29,7 +27,7 @@ void testResilientPQ() {
     assert(q.top() == rpq.findmin());
   }
 
-  cout<<"\n Now testing Deletemin()";
+  cout<<"Now testing Deletemin()" << endl;;
   while (q.size() > 0) {
     size_t toDelete = q.top();
     //cout<<"\n Deleting "<<toDelete;
@@ -38,4 +36,13 @@ void testResilientPQ() {
     //cout<<"\n Checking if same elements were deleted; Expected "<<toDelete<<" Actual "<<e;
     assert( toDelete == e);
   }
+
+}
+
+void testResilientPQ() {
+  srand(time(NULL));
+  cout << "Testing resilient version" << endl;
+  testResilientPQ(true);
+  cout << "Testing non-resilient version" << endl;
+  testResilientPQ(false);
 }

@@ -11,7 +11,7 @@ using namespace std;
 class ResilientPQ {
 
 public:
-  ResilientPQ(size_t delta, size_t n);
+  ResilientPQ(size_t delta, size_t n, bool is_resilient);
   ~ResilientPQ();
 
   void insert(size_t key);
@@ -28,6 +28,9 @@ private:
   size_t delta;
   // Total number of elements to be inserted in the priority queue
   size_t n;
+
+  // Whether to use resilient sorting/merging or not
+  bool is_resilient;
 
   // Layer of the priority queue
   vector<Layer> layers;

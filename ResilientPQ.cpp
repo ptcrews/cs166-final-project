@@ -3,7 +3,8 @@
 #include <bits/stdc++.h>
 #include <algorithm>
 
-ResilientPQ::ResilientPQ(size_t delta, size_t n) : res_util(delta) {
+ResilientPQ::ResilientPQ(size_t delta, size_t n, bool resilient) : res_util(delta) {
+  this->is_resilient = resilient;
   this->delta = delta;
   this->n = n;
   this->bufferThreshold = delta + log2(n) + 1; // The insertion buffer can contain upto \delta + log n + 1 elements
@@ -23,8 +24,11 @@ void ResilientPQ::insert(size_t key) {
   }
   // Insertion buffer is full; first sort elements in the buffer and
   //then perform a faithful merge with the up_buffer
-  //TODO: implement resilient sorting
-  this->buffer = this->res_util.ResilientSort(this->buffer);//sort(this->buffer.begin(), this->buffer.end());
+  if (this->is_resilient) {
+    this->buffer = this->res_util.ResilientSort(this->buffer);
+  } else {
+    sort(this->buffer.begin(), this->buffer.end());
+  }
 
   //Check if a merge is required; Not required if layers haven't been initialized
   if (this->layers.size() == 0) {
@@ -290,5 +294,11 @@ void ResilientPQ::printRPQ() {
 }
 
 vector<size_t> ResilientPQ::merge(vector<size_t> v1, vector<size_t> v2) {
-  return this->res_util.ResilientMerge(v1, v2);
+  if (this->is_resilient) {
+    return this->res_util.ResilientMerge(v1, v2);
+  } else {
+    vector<size_t> output;
+    std::merge(v1.begin(), v1.end(), v2.begin(), v2.end(), back_inserter(output));
+    return output;
+  }
 }
