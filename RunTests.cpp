@@ -13,6 +13,6 @@ int main() {
   utils.testAllSort();
 
   cout << "Testing Resilient Priority Queue" << endl;
-  //testResilientPQ();
+  testResilientPQ();
   return 0;
 }

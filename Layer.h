@@ -10,8 +10,8 @@ class Layer {
 public:
   Layer(size_t delta, size_t n, Layer* prev, size_t index);
   ~Layer();
-  vector<int> upBuffer;
-  vector<int> downBuffer;
+  vector<size_t> upBuffer;
+  vector<size_t> downBuffer;
   size_t getThreshold();
 private:
   Layer* prev;
