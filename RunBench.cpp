@@ -14,8 +14,12 @@
 using namespace std;
 
 #define DELTA 5
-const vector<size_t> TEST_SIZES = {  10,  100, 1000, 10000, 100000, 1000000};
-const vector<size_t> NUM_TESTS  = {1000, 1000, 1000,   100,     10,       1};
+const vector<size_t> TEST_SIZES = {  250000, 550000, 575000};
+//const vector<size_t> TEST_SIZES = {  10,  100, 1000, 2000, 3000, /*4000,*/ 5000, 10000, 20000, 30000, 40000, 50000,
+	//100000, 200000, 300000, 400000, 500000, 1000000};
+const vector<size_t> NUM_TESTS  = {       1,      1,      1 };
+//const vector<size_t> NUM_TESTS  = {1000, 1000, 1000, 1000, 1000, /*1000,*/ 1000,   100,   100,   100,   100,   100,
+//	    10,      1,      1,      1,      1,       1};
 
 // Macrobenchmark functions
 void runMacroBenchmarks();
@@ -30,7 +34,7 @@ vector<size_t> benchmarkDeleteResilientPQ(size_t count, ResilientPQ& rpq);
 
 // Microbenchmark functions
 void runMicroBenchmarks();
-void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size);
+void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size, bool merge);
 
 // Misc utilities
 vector<size_t> genRandomVec(size_t size, size_t max_elem);
@@ -42,8 +46,8 @@ int main() {
   cout << "**************************************************" << endl;
   cout << "***************** BEGIN BENCHMARK ****************" << endl;
   cout << "**************************************************" << endl;
-  //runMacroBenchmarks();
   runMicroBenchmarks();
+  runMacroBenchmarks();
   cout << "**************************************************" << endl;
   cout << "****************** END BENCHMARK *****************" << endl;
   cout << "**************************************************" << endl;
@@ -177,8 +181,12 @@ void runMicroBenchmarks() {
   cout << "************** BEGIN MICROBENCHMARK **************" << endl;
   cout << "**************************************************" << endl;
   cout << endl;
-  for (size_t i = 0; i < TEST_SIZES.size(); i++)
-    runSingleMicroBenchmark(DELTA, NUM_TESTS[i], TEST_SIZES[i]);
+  for (size_t i = 0; i < TEST_SIZES.size(); i++) {
+    runSingleMicroBenchmark(DELTA, NUM_TESTS[i], TEST_SIZES[i], true);
+  }
+  for (size_t i = 0; i < TEST_SIZES.size(); i++) {
+    runSingleMicroBenchmark(DELTA, NUM_TESTS[i], TEST_SIZES[i], false);
+  }
   cout << endl;
   cout << "**************************************************" << endl;
   cout << "**************  END MICROBENCHMARK ***************" << endl;
@@ -186,9 +194,14 @@ void runMicroBenchmarks() {
   cout << endl;
 }
 
-void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
+void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size, bool merge) {
 
-  string title = "Microbenchmark:\t delta=" + to_string(delta) + "\t numTests="
+  string prefix;
+  if (merge)
+    prefix = "Merge: ";
+  else
+    prefix = "Sort: ";
+  string title = "Microbenchmark: " + prefix + "\t delta=" + to_string(delta) + "\t numTests="
     + to_string(numTests) + "\t arr_size=" + to_string(arr_size);
 
   string test_prefix = "Microbench:" + to_string(delta) + ","
@@ -197,7 +210,11 @@ void runSingleMicroBenchmark(size_t delta, size_t numTests, size_t arr_size) {
   map<string, vector<double>> stats;
   ResUtils util = ResUtils(delta);
   for (size_t i = 0; i < numTests; i++) {
-    vector<pair<string, size_t>> single_test = util.benchAllSort(arr_size, delta);
+    vector<pair<string, size_t>> single_test;
+    if (merge)
+      single_test = util.benchAllMerge(arr_size, arr_size, delta);
+    else
+      single_test = util.benchAllSort(arr_size, delta);
     for (auto e: single_test) {
       stats[e.first].push_back(e.second);
     }
